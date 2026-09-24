@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-CatchThemAllApplication<CatchThemAll>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "usc.enser.CatchThemAll.CatchThemAllApplication",
+            "projectName": "CatchThemAll",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
