@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import usc.enser.CatchThemAll.enums.FamousCategories;
 import usc.enser.CatchThemAll.enums.FamousTypes;
@@ -18,6 +19,7 @@ import usc.enser.CatchThemAll.enums.FamousTypes;
 @Getter
 @Setter
 @AllArgsConstructor
+@NoArgsConstructor
 @Entity
 @Table(name = "famous")
 public class Famous {
