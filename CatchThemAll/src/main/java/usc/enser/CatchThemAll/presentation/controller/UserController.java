@@ -66,7 +66,7 @@ public class UserController {
         return userService.friends(id);
     }
 
-    @PostMapping("/{id}/friends/{friendId}")
+    @PostMapping("/{id}/friends")
     public UserResponse addFriend(@PathVariable UUID id, @PathVariable UUID friendId) {
         return userService.addFriend(id, friendId);
     }
