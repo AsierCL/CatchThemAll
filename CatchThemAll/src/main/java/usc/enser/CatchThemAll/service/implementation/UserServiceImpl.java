@@ -10,8 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import usc.enser.CatchThemAll.persintence.entities.User;
-import usc.enser.CatchThemAll.persintence.repositories.UserRepository;
+import usc.enser.CatchThemAll.persistence.entities.User;
+import usc.enser.CatchThemAll.persistence.repositories.UserRepository;
 import usc.enser.CatchThemAll.presentation.dto.UserCreateRequest;
 import usc.enser.CatchThemAll.presentation.dto.UserResponse;
 import usc.enser.CatchThemAll.presentation.dto.UserUpdateRequest;

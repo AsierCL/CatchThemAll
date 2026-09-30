@@ -1,4 +1,4 @@
-package usc.enser.CatchThemAll.persintence.entities;
+package usc.enser.CatchThemAll.persistence.entities;
 
 import java.util.UUID;
 

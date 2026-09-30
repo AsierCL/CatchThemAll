@@ -74,6 +74,10 @@
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-grpc-client</artifactId>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -117,6 +121,10 @@
 						</configuration>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>io.github.ascopes</groupId>
+				<artifactId>protobuf-maven-plugin</artifactId>
 			</plugin>
 		</plugins>
 	</build>
