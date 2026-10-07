@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 public class AsyncConfig {
 
     @Bean
-    public Executor grpcExecutor() {
+    Executor grpcExecutor() {
         return Executors.newCachedThreadPool();
     }
 }

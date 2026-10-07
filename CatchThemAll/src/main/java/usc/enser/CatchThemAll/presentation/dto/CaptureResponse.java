@@ -6,7 +6,8 @@ import java.util.UUID;
 public record CaptureResponse (
 
     //UUID captureId,
-    String username
+    String username,
+    double similarity
     //String famous,
     //Timestamp timestamp,
     //String photoUrl
