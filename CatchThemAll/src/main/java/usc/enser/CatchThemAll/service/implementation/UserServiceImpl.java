@@ -5,11 +5,11 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
+import usc.enser.CatchThemAll.exception.ApiException;
 import usc.enser.CatchThemAll.persistence.entities.User;
 import usc.enser.CatchThemAll.persistence.repositories.UserRepository;
 import usc.enser.CatchThemAll.presentation.dto.UserCreateRequest;
@@ -21,23 +21,24 @@ import usc.enser.CatchThemAll.service.interfaces.IUserService;
 public class UserServiceImpl implements IUserService {
 
     private final UserRepository userRepository;
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     @Transactional
     public UserResponse create(UserCreateRequest request) {
         if (request.name() == null || request.name().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name is required");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "name is required");
         }
         if (request.password() == null || request.password().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "password is required");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "password is required");
         }
         if (userRepository.existsByName(request.name())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "name already in use");
+            throw new ApiException(HttpStatus.CONFLICT, "name already in use");
         }
         User user = new User();
         user.setName(request.name());
@@ -101,7 +102,7 @@ public class UserServiceImpl implements IUserService {
     @Transactional
     public UserResponse addFriend(UUID userId, UUID friendId) {
         if (userId.equals(friendId)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "cannot befriend yourself");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "cannot befriend yourself");
         }
         User user = getOrThrow(userId);
         User friend = getOrThrow(friendId);
@@ -117,7 +118,7 @@ public class UserServiceImpl implements IUserService {
         User user = getOrThrow(userId);
         User friend = getOrThrow(friendId);
         if (!user.getFriends().contains(friend)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "friendship not found");
+            throw new ApiException(HttpStatus.NOT_FOUND, "friendship not found");
         }
         user.getFriends().remove(friend);
         friend.getFriends().remove(user);
@@ -127,7 +128,7 @@ public class UserServiceImpl implements IUserService {
 
     private User getOrThrow(UUID userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "user not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user not found"));
     }
 
     private UserResponse toResponse(User user) {
