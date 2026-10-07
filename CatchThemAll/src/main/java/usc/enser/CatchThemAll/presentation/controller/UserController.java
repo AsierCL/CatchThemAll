@@ -1,9 +1,11 @@
 package usc.enser.CatchThemAll.presentation.controller;
 
 import java.net.URI;
+import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import usc.enser.CatchThemAll.exception.ApiException;
 import usc.enser.CatchThemAll.presentation.dto.UserCreateRequest;
 import usc.enser.CatchThemAll.presentation.dto.UserResponse;
 import usc.enser.CatchThemAll.presentation.dto.UserUpdateRequest;
@@ -51,12 +54,14 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public UserResponse update(@PathVariable UUID id, @RequestBody UserUpdateRequest request) {
+    public UserResponse update(@PathVariable UUID id, @RequestBody UserUpdateRequest request, Principal principal) {
+        requireSelf(id, principal);
         return userService.update(id, request);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+    public ResponseEntity<Void> delete(@PathVariable UUID id, Principal principal) {
+        requireSelf(id, principal);
         userService.delete(id);
         return ResponseEntity.noContent().build();
     }
@@ -75,5 +80,11 @@ public class UserController {
     public ResponseEntity<Void> removeFriend(@PathVariable UUID id, @PathVariable UUID friendId) {
         userService.removeFriend(id, friendId);
         return ResponseEntity.noContent().build();
+    }
+
+    private void requireSelf(UUID id, Principal principal) {
+        if (principal == null || !id.toString().equals(principal.getName())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "not allowed on another user");
+        }
     }
 }
