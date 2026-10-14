@@ -12,12 +12,10 @@ import java.io.IOException;
 
 public interface ICaptureService {
 
-    ListenableFuture<CaptureResponse> identify (MultipartFile image,CaptureCreateRequest request) throws IOException;
+    ListenableFuture<CaptureResponse> identify(UUID userId, MultipartFile image, CaptureCreateRequest request) throws IOException;
 
-    //List<CaptureResponse> findAll();
+    List<CaptureResponse> findMine(UUID userId);
 
-    //CaptureResponse findById();
-
-    //void delete (UUID id);
+    CaptureResponse findMineById(UUID userId, UUID captureId);
 
 }
