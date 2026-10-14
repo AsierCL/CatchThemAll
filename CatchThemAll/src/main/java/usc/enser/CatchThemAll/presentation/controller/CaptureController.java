@@ -1,8 +1,10 @@
 package usc.enser.CatchThemAll.presentation.controller;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.io.IOException;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,13 +33,20 @@ public class CaptureController {
     }
 
     @PostMapping("/identify")
-    public ListenableFuture<ResponseEntity<CaptureResponse>> identify(@RequestPart("image") MultipartFile image,
-                                                                    @RequestPart("data") CaptureCreateRequest request) throws IOException{
-        return Futures.transform(
-            captureService.identify(image,request),
-            ResponseEntity::ok,
-            executor
-        );
+    public CompletableFuture<CaptureResponse> identify(@RequestPart("image") MultipartFile image, @RequestPart("data") CaptureCreateRequest request) throws IOException{
+        return captureService.identify(image,request);
     }
+
+    @PostMapping("/create")
+    public CompletableFuture<ResponseEntity<Void>> create(
+            @RequestPart("image") MultipartFile image,
+            @RequestPart("data") CaptureCreateRequest request) throws IOException {
+
+        return captureService.create(image, request)
+                .thenApply(response ->
+                        ResponseEntity.status(HttpStatus.CREATED).build()
+                );
+    }
+
 
 }

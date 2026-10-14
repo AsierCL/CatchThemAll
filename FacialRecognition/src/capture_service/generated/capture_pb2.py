@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rcapture.proto\"5\n\x16\x43\x61ptureIdentifyRequest\x12\r\n\x05image\x18\x01 \x01(\x0c\x12\x0c\n\x04name\x18\x02 \x01(\t\"-\n\x17\x43\x61ptureIdentifyResponse\x12\x12\n\nsimilarity\x18\x01 \x01(\x01\x32O\n\x0e\x43\x61ptureService\x12=\n\x08identify\x12\x17.CaptureIdentifyRequest\x1a\x18.CaptureIdentifyResponseB\x14\n\x10\x63om.example.grpcP\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rcapture.proto\"5\n\x16\x43\x61ptureIdentifyRequest\x12\r\n\x05image\x18\x01 \x01(\x0c\x12\x0c\n\x04name\x18\x02 \x01(\t\"5\n\x16\x43\x61ptureCreationRequest\x12\r\n\x05image\x18\x01 \x01(\x0c\x12\x0c\n\x04name\x18\x02 \x01(\t\"+\n\x17\x43\x61ptureCreationResponse\x12\x10\n\x08response\x18\x01 \x01(\t\"-\n\x17\x43\x61ptureIdentifyResponse\x12\x12\n\nsimilarity\x18\x01 \x01(\x01\x32\x8c\x01\n\x0e\x43\x61ptureService\x12=\n\x08identify\x12\x17.CaptureIdentifyRequest\x1a\x18.CaptureIdentifyResponse\x12;\n\x06\x63reate\x12\x17.CaptureCreationRequest\x1a\x18.CaptureCreationResponseB\x14\n\x10\x63om.example.grpcP\x01\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -34,8 +34,12 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._serialized_options = b'\n\020com.example.grpcP\001'
   _globals['_CAPTUREIDENTIFYREQUEST']._serialized_start=17
   _globals['_CAPTUREIDENTIFYREQUEST']._serialized_end=70
-  _globals['_CAPTUREIDENTIFYRESPONSE']._serialized_start=72
-  _globals['_CAPTUREIDENTIFYRESPONSE']._serialized_end=117
-  _globals['_CAPTURESERVICE']._serialized_start=119
-  _globals['_CAPTURESERVICE']._serialized_end=198
+  _globals['_CAPTURECREATIONREQUEST']._serialized_start=72
+  _globals['_CAPTURECREATIONREQUEST']._serialized_end=125
+  _globals['_CAPTURECREATIONRESPONSE']._serialized_start=127
+  _globals['_CAPTURECREATIONRESPONSE']._serialized_end=170
+  _globals['_CAPTUREIDENTIFYRESPONSE']._serialized_start=172
+  _globals['_CAPTUREIDENTIFYRESPONSE']._serialized_end=217
+  _globals['_CAPTURESERVICE']._serialized_start=220
+  _globals['_CAPTURESERVICE']._serialized_end=360
 # @@protoc_insertion_point(module_scope)

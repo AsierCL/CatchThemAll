@@ -54,11 +54,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
-                .requestMatchers(HttpMethod.POST, "/users").permitAll()
-                .requestMatchers(HttpMethod.GET, "/users/ranking").permitAll()
-                .requestMatchers("/error").permitAll()
-                .anyRequest().authenticated()
+                    .anyRequest().permitAll()
             )
             .exceptionHandling(handling -> handling.accessDeniedHandler(accessDeniedHandler))
             .oauth2ResourceServer(oauth2 -> oauth2
