@@ -15,6 +15,10 @@ public interface UserRepository extends JpaRepository<User, UUID>{
 
     boolean existsByName(String name);
 
+    boolean existsByNameAndUserIdNot(String name, UUID userId);
+
+    List<User> findAllByNameContainingIgnoreCaseOrderByNameAsc(String name);
+
     List<User> findAllByOrderByScoreDesc();
 
 }
