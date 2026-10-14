@@ -1,7 +1,6 @@
 package usc.enser.CatchThemAll.presentation.controller;
 
 import java.io.IOException;
-import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executor;
@@ -20,6 +19,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import usc.enser.CatchThemAll.presentation.dto.CaptureCreateRequest;
 import usc.enser.CatchThemAll.presentation.dto.CaptureResponse;
+import usc.enser.CatchThemAll.service.interfaces.ICurrentUserService;
 import usc.enser.CatchThemAll.service.interfaces.ICaptureService;
 
 @RestController
@@ -27,37 +27,35 @@ import usc.enser.CatchThemAll.service.interfaces.ICaptureService;
 public class CaptureController {
 
     private final ICaptureService captureService;
-
+    private final ICurrentUserService currentUserService;
     private final Executor executor;
 
-    public CaptureController(ICaptureService captureService, Executor grpcExecutor) {
+    public CaptureController(ICaptureService captureService, ICurrentUserService currentUserService,
+                             Executor grpcExecutor) {
         this.captureService = captureService;
+        this.currentUserService = currentUserService;
         this.executor = grpcExecutor;
     }
 
     @PostMapping("/identify")
     public ListenableFuture<ResponseEntity<CaptureResponse>> identify(@RequestPart("image") MultipartFile image,
-                                                                      @RequestPart("data") CaptureCreateRequest request,
-                                                                      Principal principal) throws IOException {
+                                                                      @RequestPart("data") CaptureCreateRequest request)
+            throws IOException {
         return Futures.transform(
-            captureService.identify(currentUserId(principal), image, request),
+            captureService.identify(currentUserService.getCurrentUserId(), image, request),
             ResponseEntity::ok,
             executor
         );
     }
 
     @GetMapping
-    public List<CaptureResponse> findMine(Principal principal) {
-        return captureService.findMine(currentUserId(principal));
+    public List<CaptureResponse> findMine() {
+        return captureService.findMine(currentUserService.getCurrentUserId());
     }
 
     @GetMapping("/{captureId}")
-    public CaptureResponse findMineById(@PathVariable UUID captureId, Principal principal) {
-        return captureService.findMineById(currentUserId(principal), captureId);
-    }
-
-    private UUID currentUserId(Principal principal) {
-        return UUID.fromString(principal.getName());
+    public CaptureResponse findMineById(@PathVariable UUID captureId) {
+        return captureService.findMineById(currentUserService.getCurrentUserId(), captureId);
     }
 
 }
