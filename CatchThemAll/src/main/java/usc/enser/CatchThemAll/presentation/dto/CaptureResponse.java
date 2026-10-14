@@ -4,13 +4,11 @@ import java.sql.Timestamp;
 import java.util.UUID;
 
 public record CaptureResponse (
-
-    //UUID captureId,
-    String username,
-    double similarity
-    //String famous,
-    //Timestamp timestamp,
-    //String photoUrl
-    //Ubicacion
+    UUID captureId,
+    UUID famousId,
+    String famousName,
+    double similarity,
+    boolean captured,
+    Timestamp timestamp
 ) {
 }
