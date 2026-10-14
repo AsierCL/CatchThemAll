@@ -25,7 +25,7 @@ public interface IUserService {
 
     List<UserResponse> friends(UUID userId);
 
-    UserResponse friend(UUID userId, UUID friendId);
+    UserResponse getFriendProfile(UUID userId, UUID friendId);
 
     UserResponse addFriend(UUID userId, UUID friendId);
 

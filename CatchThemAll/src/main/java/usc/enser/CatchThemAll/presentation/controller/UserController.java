@@ -81,8 +81,8 @@ public class UserController {
     }
 
     @GetMapping("/{id}/friends/{friendId}")
-    public UserResponse friend(@PathVariable UUID id, @PathVariable UUID friendId) {
-        return userService.friend(id, friendId);
+    public UserResponse getFriendProfile(@PathVariable UUID id, @PathVariable UUID friendId) {
+        return userService.getFriendProfile(id, friendId);
     }
 
     @PostMapping("/{id}/friends/{friendId}")

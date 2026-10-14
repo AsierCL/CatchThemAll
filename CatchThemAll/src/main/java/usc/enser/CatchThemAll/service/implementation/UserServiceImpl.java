@@ -130,7 +130,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     @Transactional(readOnly = true)
-    public UserResponse friend(UUID userId, UUID friendId) {
+    public UserResponse getFriendProfile(UUID userId, UUID friendId) {
         User user = getOrThrow(userId);
         User friend = getOrThrow(friendId);
         if (!user.getFriends().contains(friend)) {
