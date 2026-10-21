@@ -62,18 +62,29 @@ class CaptureService(capture_pb2_grpc.CaptureServiceServicer):
         try:
             image = bytes_to_image(request.image)
             embedding = self.get_embedding(image)
-            original = self.find_embedding(request.name)
+            originals = self.find_embedding(request.name)
 
-            if original is None:
+            if originals is None:
                 context.set_code(__import__("grpc").StatusCode.NOT_FOUND)
                 context.set_details("No existe un famoso con ese nombre")
                 raise ValueError("No existe un famoso con ese nombre")
 
-            similarity = self.compare_embedding(embedding, original)
+            originals = list(originals)
+            results = []
+            for original in originals:
+                similarity = self.compare_embedding(embedding, original)
+                results.append(similarity)
 
-            return capture_pb2.CaptureIdentifyResponse(
-                similarity=similarity
-            )
+            results.sort(reverse=True)
+
+            if (1 - results[0]) < 0.35:
+                return capture_pb2.CaptureIdentifyResponse(
+                    similarity=results[0]
+                )
+
+            else:
+                raise ValueError("No se ha encontrado coincidencia con este famoso")
+
 
         except Exception as e:
             if context.code() is None:
@@ -93,12 +104,12 @@ class CaptureService(capture_pb2_grpc.CaptureServiceServicer):
             (name,)
         )
 
-        row = self.cursor.fetchone()
+        rows = self.cursor.fetchall()
 
-        if row is None:
+        if rows is None:
             return None
 
-        return row[0]
+        return [row[0] for row in rows]
 
     def compare_embedding(self, embedding, original):
         a = np.asarray(embedding, dtype=np.float32)

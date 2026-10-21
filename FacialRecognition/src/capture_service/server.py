@@ -28,7 +28,7 @@ def server():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS face_embeddings (
             id SERIAL PRIMARY KEY,
-            name TEXT NOT NULL UNIQUE,
+            name TEXT NOT NULL,
             embedding VECTOR(512)
         )
     """)
