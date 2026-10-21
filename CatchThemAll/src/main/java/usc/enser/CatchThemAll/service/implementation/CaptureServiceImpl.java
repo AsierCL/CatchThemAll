@@ -1,20 +1,21 @@
 package usc.enser.CatchThemAll.service.implementation;
 
-import java.io.IOException;
+import com.example.grpc.*;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.MoreExecutors;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executor;
+import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.example.grpc.CaptureIdentifyRequest;
-import com.example.grpc.CaptureIdentifyResponse;
-import com.example.grpc.CaptureServiceGrpc;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.ByteString;
@@ -27,6 +28,7 @@ import usc.enser.CatchThemAll.persistence.repositories.CaptureRepository;
 import usc.enser.CatchThemAll.persistence.repositories.FamousRepository;
 import usc.enser.CatchThemAll.persistence.repositories.UserRepository;
 import usc.enser.CatchThemAll.presentation.dto.CaptureCreateRequest;
+import usc.enser.CatchThemAll.presentation.dto.CaptureCreateResponse;
 import usc.enser.CatchThemAll.presentation.dto.CaptureResponse;
 import usc.enser.CatchThemAll.service.interfaces.ICaptureService;
 
@@ -73,6 +75,64 @@ public class CaptureServiceImpl implements ICaptureService {
                 .setName(famous.getName())
                 .build();
 
+        ListenableFuture<CaptureIdentifyResponse> futureResponse =
+                captureServiceStub.identify(identifyRequest);
+
+        ListenableFuture<CaptureResponse> guavaFuture = Futures.transform(
+                futureResponse,
+                identifyResponse -> {
+                    //Captures capture = new Captures();
+                    // rellenar con request e identifyResponse
+                    //captureRepository.save(capture);
+                    return new CaptureResponse(request.name(), identifyResponse.getSimilarity());
+                },
+                executor);
+
+        CompletableFuture<CaptureResponse> result = new CompletableFuture<>();
+
+        Futures.addCallback(guavaFuture, new FutureCallback<CaptureResponse>() {
+            @Override
+            public void onSuccess(CaptureResponse r) {
+                result.complete(r);
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                result.completeExceptionally(t);
+            }
+        }, MoreExecutors.directExecutor());
+
+        return result;
+    }
+
+    public CompletableFuture<CaptureCreationResponse> create(MultipartFile image, CaptureCreateRequest request) throws IOException{
+
+        byte[] bytes = image.getBytes();
+        String name = request.name();
+
+        CaptureCreationRequest creationRequest = CaptureCreationRequest.newBuilder()
+                .setImage(ByteString.copyFrom(bytes))
+                .setName(name)
+                .build();
+
+        ListenableFuture<CaptureCreationResponse> futureResponse =
+                captureServiceStub.create(creationRequest);
+
+        CompletableFuture<CaptureCreationResponse> result = new CompletableFuture<>();
+
+        Futures.addCallback(futureResponse, new FutureCallback<CaptureCreationResponse>() {
+            @Override
+            public void onSuccess(CaptureCreationResponse r) {
+                result.complete(r);
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                result.completeExceptionally(t);
+            }
+        }, MoreExecutors.directExecutor());
+
+        return result;
         ListenableFuture<CaptureIdentifyResponse> identifyFuture = captureServiceStub.identify(identifyRequest);
         return Futures.transform(identifyFuture, response -> recordIfCaptured(user, famous, response), executor);
     }

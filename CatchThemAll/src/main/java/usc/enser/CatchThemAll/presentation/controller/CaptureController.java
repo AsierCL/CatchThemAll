@@ -1,10 +1,12 @@
 package usc.enser.CatchThemAll.presentation.controller;
 
+import java.util.concurrent.CompletableFuture;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,24 +40,20 @@ public class CaptureController {
     }
 
     @PostMapping("/identify")
-    public ListenableFuture<ResponseEntity<CaptureResponse>> identify(@RequestPart("image") MultipartFile image,
-                                                                      @RequestPart("data") CaptureCreateRequest request)
-            throws IOException {
-        return Futures.transform(
-            captureService.identify(currentUserService.getCurrentUserId(), image, request),
-            ResponseEntity::ok,
-            executor
-        );
+    public CompletableFuture<CaptureResponse> identify(@RequestPart("image") MultipartFile image, @RequestPart("data") CaptureCreateRequest request) throws IOException{
+        return captureService.identify(image,request);
     }
 
-    @GetMapping
-    public List<CaptureResponse> findMine() {
-        return captureService.findMine(currentUserService.getCurrentUserId());
+    @PostMapping("/create")
+    public CompletableFuture<ResponseEntity<Void>> create(
+            @RequestPart("image") MultipartFile image,
+            @RequestPart("data") CaptureCreateRequest request) throws IOException {
+
+        return captureService.create(image, request)
+                .thenApply(response ->
+                        ResponseEntity.status(HttpStatus.CREATED).build()
+                );
     }
 
-    @GetMapping("/{captureId}")
-    public CaptureResponse findMineById(@PathVariable UUID captureId) {
-        return captureService.findMineById(currentUserService.getCurrentUserId(), captureId);
-    }
 
 }
