@@ -15,7 +15,11 @@ public interface FamousRepository extends JpaRepository<Famous, UUID>{
 
     Optional<Famous> findByName(String name);
 
+    List<Famous> findAllByOrderByPokedexNumberAsc();
+
     List<Famous> findByType(FamousTypes type);
+
+    List<Famous> findByTypeOrderByPokedexNumberAsc(FamousTypes type);
 
     List<Famous> findByCategory(FamousCategories category);
 

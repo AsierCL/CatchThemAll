@@ -11,7 +11,9 @@ public record FamousResponse (
     Integer pokedexNumber,
     String name,
     FamousCategories category,
-    FamousTypes type
+    FamousTypes type,
+    long captureCount,
+    long collectorCount
 
 ) {
 
