@@ -18,10 +18,9 @@ public interface ICaptureService {
     CompletableFuture<CaptureResponse> identify (MultipartFile image, CaptureCreateRequest request) throws IOException;
 
     CompletableFuture<CaptureCreationResponse> create (MultipartFile image, CaptureCreateRequest request) throws IOException;
-    //List<CaptureResponse> findAll();
 
-    //CaptureResponse findById();
+    List<CaptureResponse> findMine(UUID userId);
 
-    //void delete (UUID id);
+    CaptureResponse findMineById(UUID userId, UUID captureId);
 
 }

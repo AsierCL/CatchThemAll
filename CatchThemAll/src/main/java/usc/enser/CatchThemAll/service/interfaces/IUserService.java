@@ -13,6 +13,8 @@ public interface IUserService {
 
     List<UserResponse> findAll();
 
+    List<UserResponse> search(String name);
+
     UserResponse findById(UUID userId);
 
     List<UserResponse> ranking();
@@ -22,6 +24,8 @@ public interface IUserService {
     void delete(UUID userId);
 
     List<UserResponse> friends(UUID userId);
+
+    UserResponse getFriendProfile(UUID userId, UUID friendId);
 
     UserResponse addFriend(UUID userId, UUID friendId);
 

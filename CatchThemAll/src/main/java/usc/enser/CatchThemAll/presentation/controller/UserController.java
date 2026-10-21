@@ -1,7 +1,6 @@
 package usc.enser.CatchThemAll.presentation.controller;
 
 import java.net.URI;
-import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
 
@@ -9,17 +8,21 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import usc.enser.CatchThemAll.exception.ApiException;
+import usc.enser.CatchThemAll.presentation.dto.FriendRequest;
 import usc.enser.CatchThemAll.presentation.dto.UserCreateRequest;
 import usc.enser.CatchThemAll.presentation.dto.UserResponse;
 import usc.enser.CatchThemAll.presentation.dto.UserUpdateRequest;
+import usc.enser.CatchThemAll.service.interfaces.ICurrentUserService;
 import usc.enser.CatchThemAll.service.interfaces.IUserService;
 
 @RestController
@@ -27,14 +30,16 @@ import usc.enser.CatchThemAll.service.interfaces.IUserService;
 public class UserController {
 
     private final IUserService userService;
+    private final ICurrentUserService currentUserService;
 
-    public UserController(IUserService userService) {
+    public UserController(IUserService userService, ICurrentUserService currentUserService) {
         this.userService = userService;
+        this.currentUserService = currentUserService;
     }
 
     @GetMapping
-    public List<UserResponse> findAll() {
-        return userService.findAll();
+    public List<UserResponse> findAll(@RequestParam(required = false) String name) {
+        return userService.search(name);
     }
 
     @GetMapping("/ranking")
@@ -47,6 +52,11 @@ public class UserController {
         return userService.findById(id);
     }
 
+    @GetMapping("/me")
+    public UserResponse me() {
+        return userService.findById(currentUserService.getCurrentUserId());
+    }
+
     @PostMapping
     public ResponseEntity<UserResponse> create(@RequestBody UserCreateRequest request) {
         UserResponse created = userService.create(request);
@@ -54,14 +64,13 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public UserResponse update(@PathVariable UUID id, @RequestBody UserUpdateRequest request, Principal principal) {
-        requireSelf(id, principal);
+    @PatchMapping("/{id}")
+    public UserResponse update(@PathVariable UUID id, @RequestBody UserUpdateRequest request) {
         return userService.update(id, request);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id, Principal principal) {
-        requireSelf(id, principal);
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
         userService.delete(id);
         return ResponseEntity.noContent().build();
     }
@@ -71,9 +80,22 @@ public class UserController {
         return userService.friends(id);
     }
 
-    @PostMapping("/{id}/friends")
+    @GetMapping("/{id}/friends/{friendId}")
+    public UserResponse getFriendProfile(@PathVariable UUID id, @PathVariable UUID friendId) {
+        return userService.getFriendProfile(id, friendId);
+    }
+
+    @PostMapping("/{id}/friends/{friendId}")
     public UserResponse addFriend(@PathVariable UUID id, @PathVariable UUID friendId) {
         return userService.addFriend(id, friendId);
+    }
+
+    @PostMapping("/{id}/friends")
+    public UserResponse addFriend(@PathVariable UUID id, @RequestBody FriendRequest request) {
+        if (request == null || request.friendId() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "friendId is required");
+        }
+        return userService.addFriend(id, request.friendId());
     }
 
     @DeleteMapping("/{id}/friends/{friendId}")
@@ -82,9 +104,4 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    private void requireSelf(UUID id, Principal principal) {
-        if (principal == null || !id.toString().equals(principal.getName())) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "not allowed on another user");
-        }
-    }
 }

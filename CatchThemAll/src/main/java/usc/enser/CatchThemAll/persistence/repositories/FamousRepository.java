@@ -1,6 +1,7 @@
 package usc.enser.CatchThemAll.persistence.repositories;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,7 +13,13 @@ import usc.enser.CatchThemAll.persistence.entities.Famous;
 
 public interface FamousRepository extends JpaRepository<Famous, UUID>{
 
+    Optional<Famous> findByName(String name);
+
+    List<Famous> findAllByOrderByPokedexNumberAsc();
+
     List<Famous> findByType(FamousTypes type);
+
+    List<Famous> findByTypeOrderByPokedexNumberAsc(FamousTypes type);
 
     List<Famous> findByCategory(FamousCategories category);
 

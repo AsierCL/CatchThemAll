@@ -38,6 +38,8 @@ public class Captures {
 
     private Timestamp timestamp;
 
+    private Double similarity;
+
     //TODO
     //Acordar como manejar ubicaciones
     //private Location location;

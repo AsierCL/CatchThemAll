@@ -1,11 +1,15 @@
 package usc.enser.CatchThemAll.presentation.controller;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.io.IOException;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.Executor;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -17,6 +21,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import usc.enser.CatchThemAll.presentation.dto.CaptureCreateRequest;
 import usc.enser.CatchThemAll.presentation.dto.CaptureResponse;
+import usc.enser.CatchThemAll.service.interfaces.ICurrentUserService;
 import usc.enser.CatchThemAll.service.interfaces.ICaptureService;
 
 @RestController
@@ -24,11 +29,13 @@ import usc.enser.CatchThemAll.service.interfaces.ICaptureService;
 public class CaptureController {
 
     private final ICaptureService captureService;
-
+    private final ICurrentUserService currentUserService;
     private final Executor executor;
 
-    public CaptureController(ICaptureService captureService, Executor grpcExecutor) {
+    public CaptureController(ICaptureService captureService, ICurrentUserService currentUserService,
+                             Executor grpcExecutor) {
         this.captureService = captureService;
+        this.currentUserService = currentUserService;
         this.executor = grpcExecutor;
     }
 
