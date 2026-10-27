@@ -17,7 +17,7 @@ public interface IUserService {
 
     UserResponse findById(UUID userId);
 
-    List<UserResponse> ranking();
+    //List<UserResponse> ranking();
 
     UserResponse update(UUID userId, UserUpdateRequest request);
 

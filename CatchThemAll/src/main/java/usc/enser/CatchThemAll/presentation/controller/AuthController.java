@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import usc.enser.CatchThemAll.presentation.dto.TokenResponse;
 import usc.enser.CatchThemAll.presentation.dto.UserLogin;
+import usc.enser.CatchThemAll.presentation.dto.UserRegister;
 import usc.enser.CatchThemAll.service.interfaces.IAuthService;
 
 @RestController
@@ -23,4 +24,7 @@ public class AuthController {
     public TokenResponse login(@RequestBody UserLogin request) {
         return authService.login(request);
     }
+
+    @PostMapping("/register")
+    public TokenResponse register(@RequestBody UserRegister request){ return authService.register(request); }
 }

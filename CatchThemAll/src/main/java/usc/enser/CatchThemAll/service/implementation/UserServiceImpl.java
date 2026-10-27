@@ -47,9 +47,8 @@ public class UserServiceImpl implements IUserService {
         User user = new User();
         user.setName(name);
         user.setPasswordHash(passwordEncoder.encode(request.password()));
-        user.setDescription(request.description());
-        user.setPhoto_url(request.photoUrl());
-        user.setScore(0);
+        //TODO
+        //Crear el profile y completar user
         return toResponse(userRepository.save(user));
     }
 
@@ -75,12 +74,12 @@ public class UserServiceImpl implements IUserService {
         return toResponse(getOrThrow(userId));
     }
 
-    @Override
+    /*@Override
     @Transactional(readOnly = true)
     public List<UserResponse> ranking() {
         return userRepository.findAllByOrderByScoreDesc()
                 .stream().map(this::toResponse).toList();
-    }
+    }*/
 
     @Override
     @Transactional
@@ -102,12 +101,8 @@ public class UserServiceImpl implements IUserService {
             }
             user.setName(name);
         }
-        if (request.description() != null) {
-            user.setDescription(request.description());
-        }
-        if (request.photoUrl() != null) {
-            user.setPhoto_url(request.photoUrl());
-        }
+        //TODO
+        //Completar el resto de campos de usuario
         return toResponse(userRepository.save(user));
     }
 
@@ -177,11 +172,10 @@ public class UserServiceImpl implements IUserService {
 
     private UserResponse toResponse(User user) {
         return new UserResponse(
+                //TODO
+                //Completar el resto de campos de user
                 user.getUserId(),
                 user.getName(),
-                user.getDescription(),
-                user.getPhoto_url(),
-                user.getScore(),
                 user.getCaptures().size(),
                 user.getFriends().stream().map(User::getUserId).collect(Collectors.toSet()));
     }

@@ -42,10 +42,10 @@ public class UserController {
         return userService.search(name);
     }
 
-    @GetMapping("/ranking")
+    /*@GetMapping("/ranking")
     public List<UserResponse> ranking() {
         return userService.ranking();
-    }
+    }*/
 
     @GetMapping("/{id}")
     public UserResponse findById(@PathVariable UUID id) {
