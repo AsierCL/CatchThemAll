@@ -64,7 +64,6 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    @PatchMapping("/{id}")
     public UserResponse update(@PathVariable UUID id, @RequestBody UserUpdateRequest request) {
         return userService.update(id, request);
     }
@@ -83,11 +82,6 @@ public class UserController {
     @GetMapping("/{id}/friends/{friendId}")
     public UserResponse getFriendProfile(@PathVariable UUID id, @PathVariable UUID friendId) {
         return userService.getFriendProfile(id, friendId);
-    }
-
-    @PostMapping("/{id}/friends/{friendId}")
-    public UserResponse addFriend(@PathVariable UUID id, @PathVariable UUID friendId) {
-        return userService.addFriend(id, friendId);
     }
 
     @PostMapping("/{id}/friends")
