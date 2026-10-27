@@ -56,7 +56,7 @@ public class CaptureServiceImpl implements ICaptureService {
     }
 
     @Override
-    public ListenableFuture<CaptureResponse> identify(UUID userId, MultipartFile image,
+    public CompletableFuture<CaptureResponse> identify(UUID userId, MultipartFile image,
                                                        CaptureCreateRequest request) throws IOException {
         if (image == null || image.isEmpty()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "image is required");
@@ -75,22 +75,33 @@ public class CaptureServiceImpl implements ICaptureService {
                 .setName(famous.getName())
                 .build();
 
+        //Esperamos la respuesta
         ListenableFuture<CaptureIdentifyResponse> futureResponse =
                 captureServiceStub.identify(identifyRequest);
 
+        //Cambiamos el tipo de dato devuelto
         ListenableFuture<CaptureResponse> guavaFuture = Futures.transform(
                 futureResponse,
                 identifyResponse -> {
-                    //Captures capture = new Captures();
-                    // rellenar con request e identifyResponse
-                    //captureRepository.save(capture);
-                    return new CaptureResponse(request.name(), identifyResponse.getSimilarity());
+                    if (identifyResponse == null) {
+                        throw new IllegalStateException("No se pudo completar la identificación");
+                    }
+                    Captures capture = new Captures();
+                    capture.setUser(user);
+                    capture.setFamous(famous);
+                    capture.setTimestamp(new Timestamp(System.currentTimeMillis()));
+                    //capture.setPhotoUrl();
+                    boolean captured = captureRepository.findByCaptureFamousAndUser(famous, user).isPresent();
+                    Captures savedCapture = captureRepository.save(capture);
+                    return new CaptureResponse(savedCapture.getCaptureId(),famous.getFamousId(),
+                            famous.getName(), identifyResponse.getSimilarity(),captured,savedCapture.getTimestamp());
                 },
                 executor);
 
+        //Pasamos a CompletableFuture
         CompletableFuture<CaptureResponse> result = new CompletableFuture<>();
 
-        Futures.addCallback(guavaFuture, new FutureCallback<CaptureResponse>() {
+        Futures.addCallback(guavaFuture, new FutureCallback<>() {
             @Override
             public void onSuccess(CaptureResponse r) {
                 result.complete(r);
@@ -133,8 +144,6 @@ public class CaptureServiceImpl implements ICaptureService {
         }, MoreExecutors.directExecutor());
 
         return result;
-        ListenableFuture<CaptureIdentifyResponse> identifyFuture = captureServiceStub.identify(identifyRequest);
-        return Futures.transform(identifyFuture, response -> recordIfCaptured(user, famous, response), executor);
     }
 
     @Override

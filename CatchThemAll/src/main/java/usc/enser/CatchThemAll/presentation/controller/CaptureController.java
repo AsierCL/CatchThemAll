@@ -40,8 +40,8 @@ public class CaptureController {
     }
 
     @PostMapping("/identify")
-    public CompletableFuture<CaptureResponse> identify(@RequestPart("image") MultipartFile image, @RequestPart("data") CaptureCreateRequest request) throws IOException{
-        return captureService.identify(image,request);
+    public CompletableFuture<CaptureResponse> identify(@PathVariable UUID id,@RequestPart("image") MultipartFile image, @RequestPart("data") CaptureCreateRequest request) throws IOException{
+        return captureService.identify(id,image,request);
     }
 
     @PostMapping("/create")

@@ -39,4 +39,12 @@ public interface CaptureRepository extends JpaRepository<Captures, UUID>{
 
     Optional<Captures> findByCaptureIdAndUser(UUID captureId, User user);
 
+    @Query("""
+        SELECT c
+        FROM Captures c
+        WHERE c.famous = :famous
+          AND c.user = :user
+    """)
+    Optional<Captures> findByCaptureFamousAndUser(Famous famous, User user);
+
 }

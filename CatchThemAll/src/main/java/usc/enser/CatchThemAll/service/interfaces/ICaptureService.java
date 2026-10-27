@@ -15,7 +15,7 @@ import java.util.concurrent.CompletableFuture;
 
 public interface ICaptureService {
 
-    CompletableFuture<CaptureResponse> identify (MultipartFile image, CaptureCreateRequest request) throws IOException;
+    CompletableFuture<CaptureResponse> identify (UUID userId, MultipartFile image, CaptureCreateRequest request) throws IOException;
 
     CompletableFuture<CaptureCreationResponse> create (MultipartFile image, CaptureCreateRequest request) throws IOException;
 
