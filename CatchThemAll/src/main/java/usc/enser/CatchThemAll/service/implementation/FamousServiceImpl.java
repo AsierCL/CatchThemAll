@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import usc.enser.CatchThemAll.enums.FamousCategories;
 import usc.enser.CatchThemAll.enums.FamousTypes;
 import usc.enser.CatchThemAll.exception.ApiException;
 import usc.enser.CatchThemAll.persistence.entities.Famous;
@@ -32,14 +33,26 @@ public class FamousServiceImpl implements IFamousService {
     }
 
     @Override
-    public List<FamousResponse> findAll() {
-        return withStatistics(famousRepository.findAllByOrderByPokedexNumberAsc());
+    //Podemos usar specification si hay muchos parámetros
+    public List<FamousResponse> findAll(FamousTypes type, FamousCategories category) {
+
+        if(type != null && category != null){
+            return withStatistics(famousRepository.findByTypeAndCategoryOrderByPokedexNumberAsc(type,category));
+        }else if(type != null){
+            return withStatistics(famousRepository.findByTypeOrderByPokedexNumberAsc(type));
+        }else if(category != null){
+            return withStatistics(famousRepository.findByCategoryOrderByPokedexNumberAsc(category));
+        }else{
+            return withStatistics(famousRepository.findAll());
+        }
+
+        //return withStatistics(famousRepository.findAllByOrderByPokedexNumberAsc());
     }
 
-    @Override
+    /*@Override
     public List<FamousResponse> findByType(FamousTypes type) {
         return withStatistics(famousRepository.findByTypeOrderByPokedexNumberAsc(type));
-    }
+    }*/
 
     @Override
     public FamousResponse findById(UUID famousId) {

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import usc.enser.CatchThemAll.enums.FamousCategories;
 import usc.enser.CatchThemAll.enums.FamousTypes;
 import usc.enser.CatchThemAll.presentation.dto.FamousResponse;
 import usc.enser.CatchThemAll.service.interfaces.IFamousService;
@@ -24,8 +25,8 @@ public class FamousController {
     }
 
     @GetMapping
-    public List<FamousResponse> findAll(@RequestParam(required = false) FamousTypes type) {
-        return type == null ? famousService.findAll() : famousService.findByType(type);
+    public List<FamousResponse> findAll(@RequestParam(required = false) FamousTypes type, @RequestParam (required = false) FamousCategories category) {
+        return famousService.findAll(type,category);
     }
 
     @GetMapping("/{famousId}")

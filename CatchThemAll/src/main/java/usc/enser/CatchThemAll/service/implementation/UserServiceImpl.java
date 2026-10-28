@@ -63,25 +63,16 @@ public class UserServiceImpl implements IUserService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "update data is required");
         }
         User user = getOrThrow(userId);
-        if (request.name() != null) {
-            String name = request.name().trim();
-            if (name.isBlank()) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "name cannot be blank");
-            }
-            if (name.length() > 64) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "name must be at most 64 characters");
-            }
-            if (userRepository.existsByNameAndUserIdNot(name, userId)) {
-                throw new ApiException(HttpStatus.CONFLICT, "name already in use");
-            }
-            user.setName(name);
+        String name = request.name().trim();
+
+        if (userRepository.existsByNameAndUserIdNot(name, userId)) {
+            throw new ApiException(HttpStatus.CONFLICT, "name already in use");
         }
-        if (request.description() != null) {
-            user.setDescription(request.description().trim());
-        }
-        if (request.photoUrl() != null) {
-            user.setPhotoUrl(request.photoUrl().trim());
-        }
+        user.setName(name);
+
+        user.setDescription(request.description().trim());
+        user.setPhotoUrl(request.photoUrl().trim());
+
         return toResponse(userRepository.save(user));
     }
 
@@ -153,10 +144,10 @@ public class UserServiceImpl implements IUserService {
         return new UserResponse(
                 user.getUserId(),
                 user.getName(),
+                user.getPhotoUrl(),
                 user.getScore() == null ? 0 : user.getScore(),
-                user.getDescription(),
-                user.getPhoto_url(),
                 user.getCaptures().size(),
-                user.getFriends().stream().map(User::getUserId).collect(Collectors.toSet());
+                user.getFriends().stream().map(User::getUserId).collect(Collectors.toSet()),
+                user.getDescription());
     }
 }
