@@ -8,7 +8,10 @@ def bytes_to_image(image_bytes):
     image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
 
     if image is None:
-        raise ValueError("No se pudo decodificar la imagen")
+        context.abort(
+            grpc.StatusCode.INVALID_ARGUMENT,
+            "La imagen no se pudo decodificar"
+        )
 
     return image
 
@@ -19,20 +22,22 @@ class CaptureService(capture_pb2_grpc.CaptureServiceServicer):
         self.app = app
         self.cursor = cursor
 
-    def get_embedding(self, image):
-
+    def get_embeddings(self, image, context):
         if image is None:
-            raise ValueError("No se pudo decodificar la imagen")
+            context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                "La imagen es un campo obligatorio"
+            )
 
         faces = self.app.get(image)
 
         if not faces:
-            raise ValueError("No se ha detectado ninguna cara")
+            context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                "No hay caras en la foto"
+            )
 
-        if len(faces) > 1:
-            raise ValueError("Se han detectado varias caras")
-
-        return faces[0].normed_embedding
+        return [face.normed_embedding for face in faces]
 
     def create(self, request, context):
         try:
@@ -60,30 +65,31 @@ class CaptureService(capture_pb2_grpc.CaptureServiceServicer):
 
     def identify(self, request, context):
         try:
-            image = bytes_to_image(request.image)
-            embedding = self.get_embedding(image)
+            image = bytes_to_image(request.image, context)
+            embeddings = self.get_embeddings(image, context)
             originals = self.find_embedding(request.name)
 
-            if originals is None:
-                context.set_code(__import__("grpc").StatusCode.NOT_FOUND)
-                context.set_details("No existe un famoso con ese nombre")
-                raise ValueError("No existe un famoso con ese nombre")
-
-            originals = list(originals)
-            results = []
-            for original in originals:
-                similarity = self.compare_embedding(embedding, original)
-                results.append(similarity)
-
-            results.sort(reverse=True)
-
-            if (1 - results[0]) < 0.35:
-                return capture_pb2.CaptureIdentifyResponse(
-                    similarity=results[0]
+            if not originals:
+                context.abort(
+                    grpc.StatusCode.NOT_FOUND,
+                    "No existen embeddings para este famoso"
                 )
 
-            else:
-                raise ValueError("No se ha encontrado coincidencia con este famoso")
+            best_similarity = max(
+                self.compare_embedding(embedding, original)
+                for embedding in embeddings
+                for original in originals
+            )
+
+            if best_similarity <= 0.7:
+                context.abort(
+                    grpc.StatusCode.NOT_FOUND,
+                    "No se ha encontrado coincidencia con este famoso"
+                )
+
+            return capture_pb2.CaptureIdentifyResponse(
+                similarity=best_similarity
+            )
 
 
         except Exception as e:

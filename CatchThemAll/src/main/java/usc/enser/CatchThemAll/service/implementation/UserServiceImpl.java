@@ -153,10 +153,10 @@ public class UserServiceImpl implements IUserService {
         return new UserResponse(
                 user.getUserId(),
                 user.getName(),
-                user.getPhotoUrl(),
                 user.getScore() == null ? 0 : user.getScore(),
+                user.getDescription(),
+                user.getPhoto_url(),
                 user.getCaptures().size(),
-                user.getFriends().stream().map(User::getUserId).collect(Collectors.toSet()),
-                user.getDescription());
+                user.getFriends().stream().map(User::getUserId).collect(Collectors.toSet());
     }
 }

@@ -3,6 +3,7 @@ package usc.enser.CatchThemAll.presentation.controller;
 import java.time.Instant;
 import java.util.List;
 
+import io.grpc.StatusRuntimeException;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -79,6 +81,27 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorDTO> handleAccessDenied(AccessDeniedException exception, HttpServletRequest request) {
         return build(HttpStatus.FORBIDDEN, "access denied", request, List.of());
+    }
+
+    @ExceptionHandler(StatusRuntimeException.class)
+    public ResponseEntity<ErrorDTO> handlePyhtonErrors(StatusRuntimeException exception, HttpServletRequest request) {
+        HttpStatus status = switch (exception.getStatus().getCode()){
+            case NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case INVALID_ARGUMENT -> HttpStatus.BAD_REQUEST;
+            case UNAUTHENTICATED -> HttpStatus.UNAUTHORIZED;
+            case PERMISSION_DENIED -> HttpStatus.FORBIDDEN;
+            case ALREADY_EXISTS -> HttpStatus.CONFLICT;
+            case UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
+            case DEADLINE_EXCEEDED -> HttpStatus.GATEWAY_TIMEOUT;
+            case FAILED_PRECONDITION -> HttpStatus.UNPROCESSABLE_ENTITY;
+            default -> HttpStatus.INTERNAL_SERVER_ERROR;
+        };
+        return build(status,exception.getStatus().getDescription(),request, List.of());
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorDTO> handleBigRequest(MaxUploadSizeExceededException exception, HttpServletRequest request) {
+        return build(HttpStatus.CONTENT_TOO_LARGE, "body too large", request, List.of());
     }
 
     @ExceptionHandler(Exception.class)
