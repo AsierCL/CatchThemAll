@@ -29,7 +29,7 @@ public class User {
     @Column(nullable = false)
     private String passwordHash;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String email;
 
     @Column(nullable = false)
@@ -39,11 +39,11 @@ public class User {
 
     private String description;
 
-    private String photo_url;
+    private String photoUrl;
 
     @OneToMany(
         mappedBy = "user",
-        cascade = CascadeType.MERGE,
+        cascade = CascadeType.ALL,
         orphanRemoval = true
     )
     private List<Captures> captures = new ArrayList<>();

@@ -52,7 +52,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     @Transactional(readOnly = true)
     public List<UserResponse> ranking() {
-        return userRepository.findAllByOrderByScoreDesc()
+        return userRepository.findRanking()
                 .stream().map(this::toResponse).toList();
     }
 
@@ -76,8 +76,12 @@ public class UserServiceImpl implements IUserService {
             }
             user.setName(name);
         }
-        //TODO
-        //Completar el resto de campos de usuario
+        if (request.description() != null) {
+            user.setDescription(request.description().trim());
+        }
+        if (request.photoUrl() != null) {
+            user.setPhotoUrl(request.photoUrl().trim());
+        }
         return toResponse(userRepository.save(user));
     }
 
@@ -147,14 +151,12 @@ public class UserServiceImpl implements IUserService {
 
     private UserResponse toResponse(User user) {
         return new UserResponse(
-                //TODO
-                //Completar el resto de campos de user
                 user.getUserId(),
                 user.getName(),
-                user.getScore(),
+                user.getScore() == null ? 0 : user.getScore(),
                 user.getDescription(),
                 user.getPhoto_url(),
                 user.getCaptures().size(),
-                user.getFriends().stream().map(User::getUserId).collect(Collectors.toSet()));
+                user.getFriends().stream().map(User::getUserId).collect(Collectors.toSet());
     }
 }
