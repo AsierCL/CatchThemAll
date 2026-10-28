@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 import usc.enser.CatchThemAll.exception.ApiException;
 import usc.enser.CatchThemAll.persistence.entities.User;
 import usc.enser.CatchThemAll.persistence.repositories.UserRepository;
-import usc.enser.CatchThemAll.presentation.dto.UserCreateRequest;
 import usc.enser.CatchThemAll.presentation.dto.UserResponse;
 import usc.enser.CatchThemAll.presentation.dto.UserUpdateRequest;
 import usc.enser.CatchThemAll.service.interfaces.IUserService;
@@ -26,30 +25,6 @@ public class UserServiceImpl implements IUserService {
     public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-    }
-
-    @Override
-    @Transactional
-    public UserResponse create(UserCreateRequest request) {
-        if (request == null || request.name() == null || request.name().isBlank()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "name is required");
-        }
-        String name = request.name().trim();
-        if (name.length() > 64) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "name must be at most 64 characters");
-        }
-        if (request.password() == null || request.password().isBlank()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "password is required");
-        }
-        if (userRepository.existsByName(name)) {
-            throw new ApiException(HttpStatus.CONFLICT, "name already in use");
-        }
-        User user = new User();
-        user.setName(name);
-        user.setPasswordHash(passwordEncoder.encode(request.password()));
-        //TODO
-        //Crear el profile y completar user
-        return toResponse(userRepository.save(user));
     }
 
     @Override
@@ -74,12 +49,12 @@ public class UserServiceImpl implements IUserService {
         return toResponse(getOrThrow(userId));
     }
 
-    /*@Override
+    @Override
     @Transactional(readOnly = true)
     public List<UserResponse> ranking() {
         return userRepository.findAllByOrderByScoreDesc()
                 .stream().map(this::toResponse).toList();
-    }*/
+    }
 
     @Override
     @Transactional

@@ -35,6 +35,12 @@ public class User {
     @Column(nullable = false)
     private LocalDate birthDate;
 
+    private Integer score;
+
+    private String description;
+
+    private String photo_url;
+
     @OneToMany(
         mappedBy = "user",
         cascade = CascadeType.MERGE,
@@ -50,11 +56,4 @@ public class User {
     )
 
     private Set<User> friends = new HashSet<>();
-
-    @OneToOne(
-            mappedBy = "user",
-            cascade = CascadeType.MERGE,
-            orphanRemoval = true
-    )
-    private Profile profile;
 }

@@ -1,5 +1,6 @@
 package usc.enser.CatchThemAll.presentation.controller;
 
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,10 +22,10 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public TokenResponse login(@RequestBody UserLogin request) {
+    public TokenResponse login(@RequestBody @Valid UserLogin request) {
         return authService.login(request);
     }
 
     @PostMapping("/register")
-    public TokenResponse register(@RequestBody UserRegister request){ return authService.register(request); }
+    public TokenResponse register(@RequestBody @Valid UserRegister request){ return authService.register(request); }
 }

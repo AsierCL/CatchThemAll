@@ -48,10 +48,6 @@ public class AuthServiceImpl implements IAuthService {
 
     @Override
     public TokenResponse login(UserLogin request) {
-        if (request.name() == null || request.name().isBlank()
-                || request.password() == null || request.password().isBlank()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "name and password are required");
-        }
 
         Authentication authentication;
         try {
