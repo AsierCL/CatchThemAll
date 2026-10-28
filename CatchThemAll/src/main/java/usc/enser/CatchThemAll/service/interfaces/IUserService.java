@@ -3,13 +3,10 @@ package usc.enser.CatchThemAll.service.interfaces;
 import java.util.List;
 import java.util.UUID;
 
-import usc.enser.CatchThemAll.presentation.dto.UserCreateRequest;
 import usc.enser.CatchThemAll.presentation.dto.UserResponse;
 import usc.enser.CatchThemAll.presentation.dto.UserUpdateRequest;
 
 public interface IUserService {
-
-    UserResponse create(UserCreateRequest request);
 
     List<UserResponse> findAll();
 

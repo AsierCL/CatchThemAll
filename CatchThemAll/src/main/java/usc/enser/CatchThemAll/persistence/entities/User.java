@@ -1,22 +1,13 @@
 package usc.enser.CatchThemAll.persistence.entities;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -38,11 +29,17 @@ public class User {
     @Column(nullable = false)
     private String passwordHash;
 
-    private String photo_url;
+    @Column(nullable = false)
+    private String email;
+
+    @Column(nullable = false)
+    private LocalDate birthDate;
 
     private Integer score;
 
     private String description;
+
+    private String photo_url;
 
     @OneToMany(
         mappedBy = "user",
@@ -57,5 +54,6 @@ public class User {
         joinColumns = @JoinColumn (name = "userId"),
         inverseJoinColumns = @JoinColumn (name = "friendId")
     )
+
     private Set<User> friends = new HashSet<>();
 }

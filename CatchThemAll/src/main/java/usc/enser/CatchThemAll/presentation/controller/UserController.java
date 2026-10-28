@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,7 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import usc.enser.CatchThemAll.exception.ApiException;
 import usc.enser.CatchThemAll.presentation.dto.FriendRequest;
-import usc.enser.CatchThemAll.presentation.dto.UserCreateRequest;
 import usc.enser.CatchThemAll.presentation.dto.UserResponse;
 import usc.enser.CatchThemAll.presentation.dto.UserUpdateRequest;
 import usc.enser.CatchThemAll.service.interfaces.ICurrentUserService;
@@ -57,14 +57,9 @@ public class UserController {
         return userService.findById(currentUserService.getCurrentUserId());
     }
 
-    @PostMapping
-    public ResponseEntity<UserResponse> create(@RequestBody UserCreateRequest request) {
-        UserResponse created = userService.create(request);
-        return ResponseEntity.created(URI.create("/users/" + created.userId())).body(created);
-    }
-
     @PutMapping("/{id}")
-    public UserResponse update(@PathVariable UUID id, @RequestBody UserUpdateRequest request) {
+    @PatchMapping("/{id}")
+    public UserResponse update(@PathVariable UUID id, @RequestBody @Valid UserUpdateRequest request) {
         return userService.update(id, request);
     }
 
@@ -85,10 +80,7 @@ public class UserController {
     }
 
     @PostMapping("/{id}/friends")
-    public UserResponse addFriend(@PathVariable UUID id, @RequestBody FriendRequest request) {
-        if (request == null || request.friendId() == null) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "friendId is required");
-        }
+    public UserResponse addFriend(@PathVariable UUID id, @RequestBody @Valid FriendRequest request) {
         return userService.addFriend(id, request.friendId());
     }
 

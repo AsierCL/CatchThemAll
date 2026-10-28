@@ -1,7 +1,11 @@
 package usc.enser.CatchThemAll.presentation.dto;
 
-public record CaptureCreateRequest(
-    String name
-) {
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
+public record CaptureCreateRequest(
+        @NotNull
+        @NotBlank
+        String name
+) {
 }

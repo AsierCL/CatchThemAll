@@ -61,9 +61,6 @@ public class CaptureServiceImpl implements ICaptureService {
         if (image == null || image.isEmpty()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "image is required");
         }
-        if (request == null || request.name() == null || request.name().isBlank()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "famous name is required");
-        }
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user not found"));

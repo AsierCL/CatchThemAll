@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,14 +41,18 @@ public class CaptureController {
     }
 
     @PostMapping("/identify")
-    public CompletableFuture<CaptureResponse> identify(@PathVariable UUID id,@RequestPart("image") MultipartFile image, @RequestPart("data") CaptureCreateRequest request) throws IOException{
+    public CompletableFuture<CaptureResponse> identify(
+            @PathVariable UUID id,
+            @RequestPart("image") MultipartFile image,
+            @RequestPart("data") @Valid CaptureCreateRequest request) throws IOException{
+
         return captureService.identify(id,image,request);
     }
 
     @PostMapping("/create")
     public CompletableFuture<ResponseEntity<Void>> create(
             @RequestPart("image") MultipartFile image,
-            @RequestPart("data") CaptureCreateRequest request) throws IOException {
+            @RequestPart("data") @Valid CaptureCreateRequest request) throws IOException {
 
         return captureService.create(image, request)
                 .thenApply(response ->
