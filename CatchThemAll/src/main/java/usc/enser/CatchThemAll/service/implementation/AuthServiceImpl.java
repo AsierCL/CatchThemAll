@@ -3,6 +3,7 @@ package usc.enser.CatchThemAll.service.implementation;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Locale;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -57,7 +58,8 @@ public class AuthServiceImpl implements IAuthService {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "invalid credentials");
         }
 
-        User user = userRepository.findByName(authentication.getName());
+        User user = userRepository.findByName(authentication.getName())
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "invalid credentials"));
 
         return generateToken(user);
     }
@@ -65,14 +67,20 @@ public class AuthServiceImpl implements IAuthService {
     @Override
     public TokenResponse register(UserRegister request){
 
-        if(userRepository.existsByName(request.name())){
+        String name = request.name().trim();
+        String email = request.email().trim().toLowerCase(Locale.ROOT);
+
+        if(userRepository.existsByName(name)){
             throw new ApiException(HttpStatus.CONFLICT,"name already in use");
+        }
+        if(userRepository.existsByEmail(email)){
+            throw new ApiException(HttpStatus.CONFLICT,"email already in use");
         }
 
         User user = new User();
-        user.setName(request.name());
+        user.setName(name);
         user.setPasswordHash(passwordEncoder.encode(request.password()));
-        user.setEmail(request.email());
+        user.setEmail(email);
         user.setBirthDate(request.birthDate());
 
         User savedUser = userRepository.save(user);

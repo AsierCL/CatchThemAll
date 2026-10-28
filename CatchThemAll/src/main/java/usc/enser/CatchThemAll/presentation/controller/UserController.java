@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
+import com.fasterxml.jackson.annotation.JsonView;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -38,27 +40,38 @@ public class UserController {
     }
 
     @GetMapping
+    @JsonView(UserResponse.Basic.class)
     public List<UserResponse> findAll(@RequestParam(required = false) String name) {
         return userService.search(name);
     }
 
     @GetMapping("/ranking")
+    @JsonView(UserResponse.Basic.class)
     public List<UserResponse> ranking() {
         return userService.ranking();
     }
 
     @GetMapping("/{id}")
+    @JsonView(UserResponse.Basic.class)
     public UserResponse findById(@PathVariable UUID id) {
         return userService.findById(id);
     }
 
+    @GetMapping("/{id}/full")
+    @JsonView(UserResponse.Full.class)
+    public UserResponse findFullById(@PathVariable UUID id) {
+        return userService.findById(id);
+    }
+
     @GetMapping("/me")
+    @JsonView(UserResponse.Full.class)
     public UserResponse me() {
         return userService.findById(currentUserService.getCurrentUserId());
     }
 
     @PutMapping("/{id}")
     @PatchMapping("/{id}")
+    @JsonView(UserResponse.Full.class)
     public UserResponse update(@PathVariable UUID id, @RequestBody @Valid UserUpdateRequest request) {
         return userService.update(id, request);
     }
@@ -70,11 +83,13 @@ public class UserController {
     }
 
     @GetMapping("/{id}/friends")
+    @JsonView(UserResponse.Basic.class)
     public List<UserResponse> friends(@PathVariable UUID id) {
         return userService.friends(id);
     }
 
     @GetMapping("/{id}/friends/{friendId}")
+    @JsonView(UserResponse.Full.class)
     public UserResponse getFriendProfile(@PathVariable UUID id, @PathVariable UUID friendId) {
         return userService.getFriendProfile(id, friendId);
     }

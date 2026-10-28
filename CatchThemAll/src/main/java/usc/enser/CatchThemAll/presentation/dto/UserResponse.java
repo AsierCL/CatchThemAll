@@ -13,20 +13,20 @@ public record UserResponse(
         String name,
 
         @JsonView(Full.class)
+        String photoUrl,
+
+        @JsonView(Basic.class)
         int score,
-
-        @JsonView(Full.class)
-        String description,
-
-        @JsonView(Full.class)
-        String photo_url,
 
         @JsonView(Basic.class)
         int captureCount,
 
         @JsonView(Basic.class)
-        Set<UUID> friendIds
+        Set<UUID> friendIds,
+
+        @JsonView(Full.class)
+        String description
 ) {
     public interface Basic {}
-    public interface Full extends Basic{}
+    public interface Full extends Basic {}
 }
