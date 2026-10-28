@@ -79,11 +79,6 @@ public class UserController {
         return userService.getFriendProfile(id, friendId);
     }
 
-    @PostMapping("/{id}/friends/{friendId}")
-    public UserResponse addFriend(@PathVariable UUID id, @PathVariable UUID friendId) {
-        return userService.addFriend(id, friendId);
-    }
-
     @PostMapping("/{id}/friends")
     public UserResponse addFriend(@PathVariable UUID id, @RequestBody @Valid FriendRequest request) {
         return userService.addFriend(id, request.friendId());
