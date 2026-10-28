@@ -40,7 +40,7 @@ public class CaptureController {
         this.executor = grpcExecutor;
     }
 
-    @PostMapping("/identify")
+    @PostMapping("/{id}/identify")
     public CompletableFuture<CaptureResponse> identify(
             @PathVariable UUID id,
             @RequestPart("image") MultipartFile image,

@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +44,7 @@ public class UserController {
     }
 
     @GetMapping("/ranking")
+    @JsonView(UserResponse.Basic.class)
     public List<UserResponse> ranking() {
         return userService.ranking();
     }

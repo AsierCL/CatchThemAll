@@ -151,6 +151,9 @@ public class UserServiceImpl implements IUserService {
                 //Completar el resto de campos de user
                 user.getUserId(),
                 user.getName(),
+                user.getScore(),
+                user.getDescription(),
+                user.getPhoto_url(),
                 user.getCaptures().size(),
                 user.getFriends().stream().map(User::getUserId).collect(Collectors.toSet()));
     }
