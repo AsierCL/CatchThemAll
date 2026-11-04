@@ -12,6 +12,12 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * <p>El nombre de la constante es el que se persiste en la base de datos; el valor que viaja por la
  * API es siempre su forma en minusculas y se acepta sin distinguir mayusculas al recibirlo.</p>
  */
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
+import java.util.Arrays;
+import java.util.Locale;
+
 public enum FamousTypes {
 
     Politic,

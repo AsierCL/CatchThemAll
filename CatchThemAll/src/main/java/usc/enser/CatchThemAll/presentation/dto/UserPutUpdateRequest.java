@@ -6,12 +6,12 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 @Schema(
-        name = "UserUpdateRequest",
+        name = "UserPutUpdateRequest",
         description = """
                 Cuerpo de actualizacion de perfil. Los tres campos son obligatorios: la operacion
                 reemplaza el perfil completo, tanto en `PUT` como en `PATCH`.
                 Ver `TODO.md` en la raiz del repositorio.""")
-public record UserUpdateRequest(
+public record UserPutUpdateRequest(
 
         @Schema(
                 description = "Nuevo nombre de usuario (unico, hasta 64 caracteres). Se guarda sin espacios en los extremos.",

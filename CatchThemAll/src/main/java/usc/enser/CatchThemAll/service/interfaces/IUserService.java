@@ -3,8 +3,10 @@ package usc.enser.CatchThemAll.service.interfaces;
 import java.util.List;
 import java.util.UUID;
 
+import com.github.fge.jsonpatch.JsonPatch;
+import tools.jackson.databind.JsonNode;
 import usc.enser.CatchThemAll.presentation.dto.UserResponse;
-import usc.enser.CatchThemAll.presentation.dto.UserUpdateRequest;
+import usc.enser.CatchThemAll.presentation.dto.UserPutUpdateRequest;
 
 public interface IUserService {
 
@@ -16,7 +18,9 @@ public interface IUserService {
 
     List<UserResponse> ranking();
 
-    UserResponse update(UUID userId, UserUpdateRequest request);
+    UserResponse putUpdate(UUID userId, UserPutUpdateRequest request);
+
+    UserResponse patchUpdate(UUID userId, JsonNode request);
 
     void delete(UUID userId);
 

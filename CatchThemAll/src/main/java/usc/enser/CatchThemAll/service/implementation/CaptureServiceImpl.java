@@ -27,8 +27,6 @@ import usc.enser.CatchThemAll.persistence.entities.User;
 import usc.enser.CatchThemAll.persistence.repositories.CaptureRepository;
 import usc.enser.CatchThemAll.persistence.repositories.FamousRepository;
 import usc.enser.CatchThemAll.persistence.repositories.UserRepository;
-import usc.enser.CatchThemAll.presentation.dto.CaptureCreateRequest;
-import usc.enser.CatchThemAll.presentation.dto.CaptureCreateResponse;
 import usc.enser.CatchThemAll.presentation.dto.CaptureResponse;
 import usc.enser.CatchThemAll.service.interfaces.ICaptureService;
 
@@ -57,14 +55,14 @@ public class CaptureServiceImpl implements ICaptureService {
 
     @Override
     public CompletableFuture<CaptureResponse> identify(UUID userId, MultipartFile image,
-                                                       CaptureCreateRequest request) throws IOException {
+                                                       String name) throws IOException {
         if (image == null || image.isEmpty()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "image is required");
         }
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user not found"));
-        Famous famous = famousRepository.findByName(request.name().trim())
+        Famous famous = famousRepository.findByName(name.trim())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "famous not found"));
 
         CaptureIdentifyRequest identifyRequest = CaptureIdentifyRequest.newBuilder()
@@ -113,10 +111,9 @@ public class CaptureServiceImpl implements ICaptureService {
         return result;
     }
 
-    public CompletableFuture<CaptureCreationResponse> create(MultipartFile image, CaptureCreateRequest request) throws IOException{
+    public CompletableFuture<CaptureCreationResponse> create(MultipartFile image, String name) throws IOException{
 
         byte[] bytes = image.getBytes();
-        String name = request.name();
 
         CaptureCreationRequest creationRequest = CaptureCreationRequest.newBuilder()
                 .setImage(ByteString.copyFrom(bytes))

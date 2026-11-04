@@ -1,5 +1,6 @@
 package usc.enser.CatchThemAll.presentation.controller;
 
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,9 +29,10 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import usc.enser.CatchThemAll.presentation.dto.ErrorDTO;
+import tools.jackson.databind.JsonNode;
 import usc.enser.CatchThemAll.presentation.dto.FriendRequest;
 import usc.enser.CatchThemAll.presentation.dto.UserResponse;
-import usc.enser.CatchThemAll.presentation.dto.UserUpdateRequest;
+import usc.enser.CatchThemAll.presentation.dto.UserPutUpdateRequest;
 import usc.enser.CatchThemAll.service.interfaces.ICurrentUserService;
 import usc.enser.CatchThemAll.service.interfaces.IUserService;
 
@@ -158,14 +160,18 @@ public class UserController {
             @ApiResponse(responseCode = "409", description = "El nombre ya esta en uso",
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class)))
     })
-    @PutMapping("/{id}")
+
+    @PutMapping("/me")
     @JsonView(UserResponse.Full.class)
-    public UserResponse update(
-            @Parameter(description = "Identificador del usuario", required = true) @PathVariable UUID id,
-            @RequestBody @Valid UserUpdateRequest request) {
-        return userService.update(id, request);
+    public UserResponse putUpdate(@PathVariable UUID id, @RequestBody @Valid UserPutUpdateRequest request) throws AccessDeniedException {
+        if(currentUserService.getCurrentUserId().equals(id)){
+            return userService.putUpdate(id, request);
+        }else {
+            throw new AccessDeniedException("No puedes subir capturas por otro usuario");
+        }
     }
 
+    @PutMapping("/me")
     @Operation(
             operationId = "patchUser",
             summary = "Actualizar un usuario (PATCH)",
@@ -184,12 +190,17 @@ public class UserController {
             @ApiResponse(responseCode = "409", description = "El nombre ya esta en uso",
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class)))
     })
-    @PatchMapping("/{id}")
+    @PatchMapping(
+            value = "/me",
+            consumes = "application/json-patch+json"
+    )
     @JsonView(UserResponse.Full.class)
-    public UserResponse partialUpdate(
-            @Parameter(description = "Identificador del usuario", required = true) @PathVariable UUID id,
-            @RequestBody @Valid UserUpdateRequest request) {
-        return userService.update(id, request);
+    public UserResponse patchUpdate(@PathVariable UUID id, @RequestBody JsonNode request) throws AccessDeniedException {
+        if(currentUserService.getCurrentUserId().equals(id)){
+            return userService.patchUpdate(id, request);
+        }else {
+            throw new AccessDeniedException("No puedes subir capturas por otro usuario");
+        }
     }
 
     @Operation(
@@ -290,8 +301,14 @@ public class UserController {
     @DeleteMapping("/{id}/friends/{friendId}")
     public ResponseEntity<Void> removeFriend(
             @Parameter(description = "Identificador del usuario", required = true) @PathVariable UUID id,
-            @Parameter(description = "Identificador del amigo", required = true) @PathVariable UUID friendId) {
-        userService.removeFriend(id, friendId);
+            @Parameter(description = "Identificador del amigo", required = true) @PathVariable UUID friendId) throws AccessDeniedException {
+
+        if(currentUserService.getCurrentUserId().equals(id)){
+            userService.removeFriend(id, friendId);
+        }else {
+            throw new AccessDeniedException("No puedes subir capturas por otro usuario");
+        }
         return ResponseEntity.noContent().build();
     }
+
 }

@@ -75,7 +75,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ErrorDTO> handleResponseStatus(ResponseStatusException exception, HttpServletRequest request) {
         HttpStatus status = HttpStatus.resolve(exception.getStatusCode().value());
-        return build(status == null ? HttpStatus.INTERNAL_SERVER_ERROR : status, exception.getReason(), request, List.of());
+        String message = exception.getReason();
+
+        if (message == null || message.isBlank()) {
+            message = status == null ? HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase() : status.getReasonPhrase();
+        }
+
+        return build(status == null ? HttpStatus.INTERNAL_SERVER_ERROR : status, message, request, List.of());
     }
 
     @ExceptionHandler(AccessDeniedException.class)
