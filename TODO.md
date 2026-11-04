@@ -2,9 +2,11 @@
 
 Registro de los problemas conocidos de la API que quedaron fuera del trabajo de documentación
 OpenAPI (`docs/openapi.json`). La documentación **describe el comportamiento actual**, incluidas las
-inconsistencias listadas acá; cuando se resuelvan, hay que regenerar `docs/openapi.json` con
-`./mvnw test` y actualizar `src/main/java/usc/enser/CatchThemAll/config/OpenApiConfig.java` si cambia
-el alcance de los endpoints.
+inconsistencias listadas acá.
+
+Los arreglos de estos puntos van en una rama aparte de errores lógicos. Cuando se resuelvan, hay que
+regenerar `docs/openapi.json` con `./mvnw verify` (ver `README.md`) y revisar si cambia el alcance de
+los endpoints en `config/OpenApiConfig.java`.
 
 ## Pendientes
 
@@ -61,21 +63,17 @@ Estado en la documentación: se documenta tal cual, con una nota explícita en l
 Qué falta: decidir si `PATCH` acepta campos opcionales (con un DTO propio y actualización parcial
 real) o si se elimina y queda solo `PUT`.
 
+### 6. El multipart de capturas usa un parte `data` con JSON anidado
+
+`POST /captures/create` y `POST /captures/{id}/identify` reciben `multipart/form-data` con dos partes:
+`image` (archivo) y `data` (documento JSON con `name`). Ese parte anidado no se puede componer desde
+Swagger UI ni desde la mayoría de los clientes HTTP sin trabajo extra.
+
+Qué falta: aplanar el cuerpo a dos partes simples, `image` y `name`, con `name` validado como texto.
+Cuando se haga, hay que ajustar las anotaciones de `CaptureController`, devolver el `@Schema` que
+corresponda al DTO y regenerar la documentación.
+
 ## Cambios de contrato ya aplicados en esta rama
-
-Estos ya están hechos, pero rompen compatibilidad con clientes anteriores:
-
-### 6. Multipart de capturas aplanado
-
-`POST /captures/create` y `POST /captures/{id}/identify` ya no reciben un parte `data` con un JSON
-anidado. Ahora son dos partes simples de `multipart/form-data`:
-
-- `image`: archivo binario, obligatorio.
-- `name`: texto, obligatorio.
-
-Motivo: el parte JSON anidado no se puede componer desde Swagger UI ni desde la mayoría de los
-clientes HTTP. La validación de `name` se hace con `@NotBlank` sobre el parte y se reporta como
-`400 validation failed`, con el mismo esquema `ErrorDTO` de siempre.
 
 ### 7. Valores de enum normalizados a minúsculas
 

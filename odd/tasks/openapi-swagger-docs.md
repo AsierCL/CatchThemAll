@@ -15,23 +15,31 @@ S7 — `captured` computed before persisting: "Deja un TODO en la raiz del proye
 S8 — Capture history: "Crea los endpoints y documentalos".
 S9 — `@NotBlank` on `FriendRequest.friendId` (UUID): "No, metelo en el TODO de a raiz del proyecto".
 S10 — `PUT`/`PATCH /users/{id}` behave as full replacement with `@NotNull` on every field: "Documentalo como esta ahora mismo y anotalo en el TODO de la raiz".
-S11 — Multipart `data` JSON part: "Solucionalo de la forma mas apropiada posible, y anotalo en el TODO".
+S11 — Multipart `data` JSON part: "Solucionalo de la forma mas apropiada posible, y anotalo en el TODO". **Superseded by S16/S18**: the multipart stays as it is and the flattening becomes a pending item in `TODO.md`.
 S12 — Enum values `Legendary`/`Politic`/`Meme`: "Normaliza todo".
 S13 — Versioned spec location: "Manten el estandar" → `docs/openapi.json`.
 S14 — Swagger UI exposure: "Siempre expuesto" → no `dev` profile gate.
 S15 — Documentation language: "Documenta en español" → `info`, `summary`, `description`, `@Schema(description)` in Spanish.
+
+S16 — Testing: "No quiero ningun tipo de testing excepto lo únicamente necesario para que la documentación funcione. El resto de codigo no quiero testearlo. Ni en esta, ni en ninguna rama." → no test code at all; generation moves to a build plugin.
+
+S17 — Generation: "Plugin de springdoc en el build" → `springdoc-openapi-maven-plugin` writes `docs/openapi.json` during `./mvnw verify`.
+
+S18 — Deferred fixes: "En la proxima rama quiero hacer los cambios que vamos a dejar en el TODO (errores logicos y todo eso)" → every `TODO.md` item, including the multipart flattening, moves to a separate branch.
 
 ## Tasks
 
 T1 — Create branch and ODD tracking. Spec: S1. Commit: 283868f (folded into the work units).
 T2 — Add springdoc 3.2.0 + `OpenApiConfig` + properties. Spec: S2, S13, S14. Commit: 78cbcaf.
 T3 — Normalize enums (lowercase JSON, case-insensitive input). Spec: S12. Commit: 5d03966.
-T4 — Flatten capture multipart to `image` + `name`. Spec: S11. Commit: 283868f.
+T4 — Flatten capture multipart to `image` + `name`. **Reverted** by S16/S18: the multipart keeps the `data` JSON part and the flattening is now pending in `TODO.md`.
 T5 — Add `GET /captures/me` and `GET /captures/me/{captureId}`. Spec: S8. Commit: 283868f.
 T6 — Annotate the four controllers. Spec: S2, S3, S5, S10, S15. Commit: c264769 (+ 283868f for `CaptureController`).
 T7 — Annotate the DTOs. Spec: S15. Commit: c264769.
-T8 — Export `docs/openapi.json` + contract test. Spec: S3, S13. Commit: c264769.
+T8 — Export `docs/openapi.json`. Spec: S3, S13. Commit: c264769 (test-based) then T10 (plugin-based).
 T9 — Root `TODO.md` with S5, S6, S7, S9, S10, S11. Spec: S5-S11. Commit: 6fb9e7e.
+T10 — Replace the test-based export with `springdoc-openapi-maven-plugin` and the `openapi` H2 profile. Spec: S16, S17.
+T11 — Remove `src/test` and `spring-boot-starter-test`. Spec: S16.
 
 ## Evidence
 
@@ -92,5 +100,24 @@ L8 (orchestrator decision): `docs/openapi.json` is written by `OpenApiContractTe
 `../docs/openapi.json` (overridable with `-Dopenapi.export.path`). The same test asserts the exported
 file matches the document served at `/v3/api-docs`.
 
-L9 (evidence): suite `./mvnw test` = 15 tests, 0 failures (`FamousEnumContractTest` 3,
-`CaptureControllerTest` 6, `OpenApiContractTest` 6).
+L9 (evidence, historical): suite `./mvnw test` = 15 tests, 0 failures. No longer applicable: the
+suite was removed by S16.
+
+L10 (user, verbatim): "No quiero nada de testing. Además, el error numero 6, de aplanar el multipart
+en captures, quiero dejarlo como TODO. No hagas cambios, lo quiero meter todo en una rama de errores
+logicos en el futuro."
+
+L11 (user, verbatim, answering the scope questions): "No quiero ningun tipo de testing excepto lo
+únicamente necesario para que la documentación funcione. El resto de codigo no quiero testearlo. Ni en
+esta, ni en ninguna rama. En la proxima rama quiero hacer los cambios que vamos a dejar en el TODO
+(errores logicos y todo eso)" / "Plugin de springdoc en el build".
+
+L12 (orchestrator decision): with the plugin owning generation, no test code is "necesario para que la
+documentación funcione", so `src/test` and `spring-boot-starter-test` are gone. The plugin boots a
+dedicated `openapi` Spring profile backed by in-memory H2 on port 18080, so `./mvnw verify` needs neither
+the docker-compose Postgres nor the gRPC service.
+
+L13 (orchestrator decision): restoring the original multipart shape also dropped the explicit
+`consumes = multipart/form-data` on both POST mappings, and springdoc then documented them as
+`application/json` with a binary `image` field. `consumes` is request-mapping metadata, not logic, so it
+is declared again to keep the document truthful; the multipart body keeps the `data` JSON part.

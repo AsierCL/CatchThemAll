@@ -21,23 +21,20 @@ el código (`@Tag`, `@Operation`, `@ApiResponses`, `@Schema`) más los metadatos
 
 ### Regenerar `docs/openapi.json`
 
-El artefacto lo escribe el test de contrato, así que se regenera corriendo la suite:
+El artefacto lo escribe `springdoc-openapi-maven-plugin` durante la fase `integration-test`: el build
+arranca la aplicación con el perfil `openapi`, le pide `/v3/api-docs`, escribe el archivo y la apaga.
 
 ```bash
 cd CatchThemAll
-./mvnw test
+./mvnw clean verify
 ```
 
-`OpenApiContractTest` levanta la aplicación con la base H2 en memoria del perfil `test`, pide
-`/v3/api-docs` y deja el resultado en `docs/openapi.json`. El mismo test falla si el documento deja de
-declarar una ruta, una operación, un esquema o el esquema de seguridad esperado: es el contrato de la
-documentación.
+El perfil `openapi` (`src/main/resources/application-openapi.properties`) levanta una base H2 en
+memoria en el puerto `18080` y desactiva el soporte de docker-compose, así que **no** hace falta el
+Postgres de desarrollo ni el servicio gRPC para generar la documentación.
 
-Para escribir el artefacto en otra ruta:
-
-```bash
-./mvnw test -Dopenapi.export.path=/tmp/openapi.json
-```
+Si el build falla en la fase de `test` con clases viejas en `target/`, es porque quedó compilado algo
+que ya no existe: `clean` lo resuelve.
 
 ### Consumir la API
 
@@ -46,8 +43,8 @@ Para escribir el artefacto en otra ruta:
 3. Todos los errores comparten el esquema `ErrorDTO`: `timestamp`, `status`, `error`, `message`,
    `path` y `details`.
 
-Los endpoints de capturas usan `multipart/form-data` con dos partes simples, `image` (archivo) y
-`name` (texto). Los valores de enum viajan en minúsculas (`legendary`, `politic`, ...).
+Los endpoints de capturas usan `multipart/form-data` con dos partes, `image` (archivo) y `data` (JSON
+con el nombre del famoso). Los valores de enum viajan en minúsculas (`legendary`, `politic`, ...).
 
 ## Puesta en marcha
 
@@ -66,17 +63,7 @@ pip install -r requirements.txt
 python -m capture_service.server
 ```
 
-## Tests
-
-```bash
-cd CatchThemAll
-./mvnw test
-```
-
-Los tests usan H2 en memoria (`src/test/resources/application-test.properties`) y no necesitan el
-Postgres de Docker ni el servicio gRPC.
-
 ## Pendientes conocidos
 
 Ver [`TODO.md`](TODO.md). La documentación describe el comportamiento actual, incluidas las
-inconsistencias que quedaron registradas ahí.
+inconsistencias que quedaron registradas ahí. Los arreglos van en una rama aparte de errores lógicos.
