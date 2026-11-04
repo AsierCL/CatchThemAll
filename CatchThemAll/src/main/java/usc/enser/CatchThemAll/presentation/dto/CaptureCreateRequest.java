@@ -4,12 +4,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-/**
- * Portador interno de los campos de texto que acompanan a la imagen. No forma parte del contrato
- * HTTP: en las peticiones multipart el campo viaja como un parte simple llamado {@code name}.
- */
+@Schema(name = "CaptureCreateRequest", description = "Parte `data` de las peticiones multipart de capturas.")
 public record CaptureCreateRequest(
 
+        @Schema(
+                description = "Nombre exacto del famoso tal como figura en el catalogo (`GET /famous`).",
+                example = "Ada Lovelace",
+                requiredMode = Schema.RequiredMode.REQUIRED)
         @NotNull
         @NotBlank
         String name

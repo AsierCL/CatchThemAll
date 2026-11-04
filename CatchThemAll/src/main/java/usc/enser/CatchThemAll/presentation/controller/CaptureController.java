@@ -6,7 +6,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.io.IOException;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -49,13 +49,6 @@ public class CaptureController {
         this.executor = grpcExecutor;
     }
 
-    /**
-     * Identifica a un famoso en la foto y, si la similitud alcanza el umbral, registra la captura.
-     *
-     * <p>El cuerpo es {@code multipart/form-data} con dos partes simples: {@code image} (archivo) y
-     * {@code name} (texto). Antes se enviaba un unico parte {@code data} con un JSON anidado, que ni
-     * Swagger UI ni la mayoria de los clientes HTTP pueden componer sin trabajo extra.</p>
-     */
     @Operation(
             operationId = "identifyFamous",
             summary = "Identificar un famoso en una foto",
@@ -64,6 +57,9 @@ public class CaptureController {
                     muestras cargadas para el famoso indicado. La similitud viaja en `similarity`
                     (0 a 1) y el campo `captured` indica si el usuario ya tenia registrada esa captura
                     antes de esta peticion.
+
+                    El cuerpo es `multipart/form-data` con dos partes: `image` (archivo) y `data`
+                    (JSON con el nombre del famoso).
 
                     La respuesta es asincronica: el controlador devuelve un `CompletableFuture` que se
                     completa cuando el servicio gRPC de reconocimiento responde.
@@ -93,17 +89,11 @@ public class CaptureController {
             @Parameter(description = "Identificador del usuario dueno de la captura", required = true)
             @PathVariable UUID id,
             @RequestPart("image") MultipartFile image,
-            @RequestPart("name") @NotBlank String name) throws IOException {
+            @RequestPart("data") @Valid CaptureCreateRequest request) throws IOException {
 
-        return captureService.identify(id, image, new CaptureCreateRequest(name));
+        return captureService.identify(id, image, request);
     }
 
-    /**
-     * Envia una foto al servicio de reconocimiento facial para registrar el rostro de un famoso.
-     *
-     * <p>El cuerpo es {@code multipart/form-data} con dos partes simples: {@code image} (archivo) y
-     * {@code name} (texto).</p>
-     */
     @Operation(
             operationId = "createFamousFace",
             summary = "Registrar el rostro de un famoso",
@@ -111,6 +101,9 @@ public class CaptureController {
                     Carga una foto al servicio de reconocimiento facial para guardar el embedding del
                     famoso indicado. Es una operacion de carga de datos: no crea una captura, solo la
                     muestra de referencia que despues usan las identificaciones.
+
+                    El cuerpo es `multipart/form-data` con dos partes: `image` (archivo) y `data`
+                    (JSON con el nombre del famoso).
 
                     La respuesta es asincronica y devuelve `201 Created` sin cuerpo cuando el servicio
                     gRPC confirma la creacion.
@@ -133,17 +126,14 @@ public class CaptureController {
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public CompletableFuture<ResponseEntity<Void>> create(
             @RequestPart("image") MultipartFile image,
-            @RequestPart("name") @NotBlank String name) throws IOException {
+            @RequestPart("data") @Valid CaptureCreateRequest request) throws IOException {
 
-        return captureService.create(image, new CaptureCreateRequest(name))
+        return captureService.create(image, request)
                 .thenApply(response ->
                         ResponseEntity.status(HttpStatus.CREATED).build()
                 );
     }
 
-    /**
-     * Historial de capturas del usuario autenticado, de la mas reciente a la mas antigua.
-     */
     @Operation(
             operationId = "listMyCaptures",
             summary = "Historial de capturas propias",
@@ -161,9 +151,6 @@ public class CaptureController {
         return captureService.findMine(currentUserService.getCurrentUserId());
     }
 
-    /**
-     * Una captura concreta del usuario autenticado.
-     */
     @Operation(
             operationId = "getMyCapture",
             summary = "Consultar una captura propia",
