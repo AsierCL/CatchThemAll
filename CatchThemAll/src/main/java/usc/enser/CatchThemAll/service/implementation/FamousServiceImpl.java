@@ -43,10 +43,9 @@ public class FamousServiceImpl implements IFamousService {
         }else if(category != null){
             return withStatistics(famousRepository.findByCategoryOrderByPokedexNumberAsc(category));
         }else{
-            return withStatistics(famousRepository.findAll());
+            return withStatistics(famousRepository.findAllByOrderByPokedexNumberAsc());
         }
 
-        //return withStatistics(famousRepository.findAllByOrderByPokedexNumberAsc());
     }
 
     /*@Override

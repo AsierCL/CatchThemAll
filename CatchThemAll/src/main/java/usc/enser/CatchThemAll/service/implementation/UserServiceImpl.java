@@ -9,11 +9,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import com.flipkart.zjsonpatch.Jackson3JsonPatch;
 import usc.enser.CatchThemAll.exception.ApiException;
 import usc.enser.CatchThemAll.persistence.entities.User;
 import usc.enser.CatchThemAll.persistence.repositories.UserRepository;
+import usc.enser.CatchThemAll.presentation.dto.UserPatch;
 import usc.enser.CatchThemAll.presentation.dto.UserResponse;
-import usc.enser.CatchThemAll.presentation.dto.UserUpdateRequest;
+import usc.enser.CatchThemAll.presentation.dto.UserPutUpdateRequest;
 import usc.enser.CatchThemAll.service.interfaces.IUserService;
 
 @Service
@@ -21,10 +25,12 @@ public class UserServiceImpl implements IUserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ObjectMapper objectMapper;
 
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, ObjectMapper objectMapper) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -58,7 +64,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     @Transactional
-    public UserResponse update(UUID userId, UserUpdateRequest request) {
+    public UserResponse putUpdate(UUID userId, UserPutUpdateRequest request) {
         if (request == null) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "update data is required");
         }
@@ -72,6 +78,46 @@ public class UserServiceImpl implements IUserService {
 
         user.setDescription(request.description().trim());
         user.setPhotoUrl(request.photoUrl().trim());
+
+        return toResponse(userRepository.save(user));
+    }
+
+    @Override
+    @Transactional
+    public UserResponse patchUpdate(UUID userId, JsonNode request) {
+        if (request == null || !request.isArray() || request.isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "update data is required");
+        }
+        User user = getOrThrow(userId);
+
+        UserPatch current = new UserPatch(
+                user.getName(),
+                user.getDescription(),
+                user.getPhotoUrl()
+        );
+
+        JsonNode node = objectMapper.valueToTree(current);
+
+        JsonNode patchedNode = Jackson3JsonPatch.apply(request,node);
+
+        UserPatch updatedUser = objectMapper.treeToValue(patchedNode,UserPatch.class);
+
+        if (updatedUser.name() == null || updatedUser.name().isBlank()) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "name is required"
+            );
+        }
+
+        String name = updatedUser.name().trim();
+
+        if (userRepository.existsByNameAndUserIdNot(name, userId)) {
+            throw new ApiException(HttpStatus.CONFLICT, "name already in use");
+        }
+
+        user.setName(name);
+        user.setDescription(updatedUser.description() == null ? null : updatedUser.description().trim());
+        user.setPhotoUrl(updatedUser.photoUrl() == null ? null : updatedUser.photoUrl().trim());
 
         return toResponse(userRepository.save(user));
     }

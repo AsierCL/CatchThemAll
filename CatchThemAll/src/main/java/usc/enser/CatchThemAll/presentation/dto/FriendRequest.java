@@ -7,7 +7,6 @@ import java.util.UUID;
 
 public record FriendRequest(
         @NotNull
-        @NotBlank
         UUID friendId
 ) {
 }

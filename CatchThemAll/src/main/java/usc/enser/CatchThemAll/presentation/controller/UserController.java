@@ -1,14 +1,12 @@
 package usc.enser.CatchThemAll.presentation.controller;
 
-import java.net.URI;
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.validation.Valid;
-import com.fasterxml.jackson.annotation.JsonView;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,10 +19,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import usc.enser.CatchThemAll.exception.ApiException;
+import tools.jackson.databind.JsonNode;
 import usc.enser.CatchThemAll.presentation.dto.FriendRequest;
 import usc.enser.CatchThemAll.presentation.dto.UserResponse;
-import usc.enser.CatchThemAll.presentation.dto.UserUpdateRequest;
+import usc.enser.CatchThemAll.presentation.dto.UserPutUpdateRequest;
 import usc.enser.CatchThemAll.service.interfaces.ICurrentUserService;
 import usc.enser.CatchThemAll.service.interfaces.IUserService;
 
@@ -70,11 +68,27 @@ public class UserController {
         return userService.findById(currentUserService.getCurrentUserId());
     }
 
-    @PutMapping("/{id}")
-    @PatchMapping("/{id}")
+    @PutMapping("/me")
     @JsonView(UserResponse.Full.class)
-    public UserResponse update(@PathVariable UUID id, @RequestBody @Valid UserUpdateRequest request) {
-        return userService.update(id, request);
+    public UserResponse putUpdate(@PathVariable UUID id, @RequestBody @Valid UserPutUpdateRequest request) throws AccessDeniedException {
+        if(currentUserService.getCurrentUserId().equals(id)){
+            return userService.putUpdate(id, request);
+        }else {
+            throw new AccessDeniedException("No puedes subir capturas por otro usuario");
+        }
+    }
+
+    @PatchMapping(
+            value = "/me",
+            consumes = "application/json-patch+json"
+    )
+    @JsonView(UserResponse.Full.class)
+    public UserResponse patchUpdate(@PathVariable UUID id, @RequestBody JsonNode request) throws AccessDeniedException {
+        if(currentUserService.getCurrentUserId().equals(id)){
+            return userService.patchUpdate(id, request);
+        }else {
+            throw new AccessDeniedException("No puedes subir capturas por otro usuario");
+        }
     }
 
     @DeleteMapping("/{id}")
@@ -100,9 +114,13 @@ public class UserController {
         return userService.addFriend(id, request.friendId());
     }
 
-    @DeleteMapping("/{id}/friends/{friendId}")
-    public ResponseEntity<Void> removeFriend(@PathVariable UUID id, @PathVariable UUID friendId) {
-        userService.removeFriend(id, friendId);
+    @DeleteMapping("/me/friends/{friendId}")
+    public ResponseEntity<Void> removeFriend(@PathVariable UUID id, @PathVariable UUID friendId) throws AccessDeniedException {
+        if(currentUserService.getCurrentUserId().equals(id)){
+            userService.removeFriend(id, friendId);
+        }else {
+            throw new AccessDeniedException("No puedes subir capturas por otro usuario");
+        }
         return ResponseEntity.noContent().build();
     }
 

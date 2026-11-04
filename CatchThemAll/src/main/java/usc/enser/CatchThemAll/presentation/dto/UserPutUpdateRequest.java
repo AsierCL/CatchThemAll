@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-public record UserUpdateRequest(
+public record UserPutUpdateRequest(
         @Size(max = 64)
         @NotNull
         @NotBlank
