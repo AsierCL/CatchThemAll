@@ -121,3 +121,18 @@ L13 (orchestrator decision): restoring the original multipart shape also dropped
 `consumes = multipart/form-data` on both POST mappings, and springdoc then documented them as
 `application/json` with a binary `image` field. `consumes` is request-mapping metadata, not logic, so it
 is declared again to keep the document truthful; the multipart body keeps the `data` JSON part.
+
+L14 (review evidence, lineage `review-62df0a787090289c`): closure `escalated`, cause `unknown_causality`,
+finding `R3-1` (reliability, text not exposed by the closure envelope). The readability lens reported
+three findings; the first group submission was refused at admission because a severe finding arrived
+without `evidence_class`/`causal_disposition`, and the payload is retained at
+`.git/gentle-ai/rejected-results/review-62df0a787090289c/`:
+
+- `R2-1` (CRITICAL, real regression): `addFriend` gained `@JsonView(UserResponse.Basic.class)` while
+  the baseline had no view, so `default-view-inclusion=false` dropped `photoUrl` and `description` from
+  `POST /users/{id}/friends`. **Fixed**: the annotation is removed and the operation documents the full
+  schema again.
+- `R2-2` (suggestion): case-insensitive enum matching is written three times. **Deferred** to `TODO.md`
+  item 0, because consolidating it is a logic change.
+- `R2-3` (suggestion): the OpenAPI version was hardcoded. **Fixed**: `spring-boot-maven-plugin` now runs
+  the `build-info` goal and `OpenApiConfig` reads `BuildProperties`, falling back to `dev`.

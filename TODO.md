@@ -10,6 +10,15 @@ los endpoints en `config/OpenApiConfig.java`.
 
 ## Pendientes
 
+### 0. Unificar la resolución case-insensitive de enums
+
+La misma política (recortar espacios, comparar sin distinguir mayúsculas, rechazar lo desconocido)
+está implementada tres veces: en `FamousCategories.fromValue`, en `FamousTypes.fromValue` y en
+`EnumConversionConfig.CaseInsensitiveEnumConverter`. Si cambia la semántica, hay que tocar los tres
+lugares. Conviene un único helper compartido.
+
+Detectado por la revisión de legibilidad (R2-2, sugerencia), no bloquea nada.
+
 ### 1. El filtro de seguridad deja pasar todas las peticiones
 
 `SecurityConfig.securityFilterChain` usa `.anyRequest().permitAll()`. Está así a propósito para

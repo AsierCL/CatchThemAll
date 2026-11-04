@@ -2,6 +2,8 @@ package usc.enser.CatchThemAll.config;
 
 import java.util.List;
 
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -26,11 +28,11 @@ public class OpenApiConfig {
     public static final String BEARER_SCHEME = "bearerAuth";
 
     @Bean
-    OpenAPI catchThemAllOpenApi() {
+    OpenAPI catchThemAllOpenApi(ObjectProvider<BuildProperties> buildProperties) {
         return new OpenAPI()
                 .info(new Info()
                         .title("CatchThemAll API")
-                        .version("0.0.1-SNAPSHOT")
+                        .version(apiVersion(buildProperties))
                         .summary("Pokedex de famosos con capturas por reconocimiento facial")
                         .description("""
                                 API REST de CatchThemAll. Permite registrarse, autenticarse con JWT, consultar el
@@ -68,5 +70,18 @@ public class OpenApiConfig {
                                         Token JWT obtenido en `POST /auth/login` o `POST /auth/register`.
                                         Formato: `Authorization: Bearer <token>`.
                                         """)));
+    }
+
+    /**
+     * La version sale de {@code META-INF/build-info.properties}, que genera el plugin de Maven, para no
+     * duplicar el numero que vive en el pom. Si el recurso no existe (por ejemplo al correr desde el IDE
+     * sin empaquetar) se informa {@code dev}.
+     */
+    private String apiVersion(ObjectProvider<BuildProperties> buildProperties) {
+        BuildProperties properties = buildProperties.getIfAvailable();
+        if (properties == null || properties.getVersion() == null || properties.getVersion().isBlank()) {
+            return "dev";
+        }
+        return properties.getVersion();
     }
 }

@@ -270,7 +270,6 @@ public class UserController {
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class)))
     })
     @PostMapping("/{id}/friends")
-    @JsonView(UserResponse.Basic.class)
     public UserResponse addFriend(
             @Parameter(description = "Identificador del usuario", required = true) @PathVariable UUID id,
             @RequestBody @Valid FriendRequest request) {
