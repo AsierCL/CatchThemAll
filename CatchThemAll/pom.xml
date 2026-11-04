@@ -80,11 +80,6 @@
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>3.2.0</version>
 		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
 	</dependencies>
 
 	<build>
@@ -92,6 +87,50 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<executions>
+					<!-- Arranca la aplicacion con el perfil `openapi` (H2 en memoria) para que el
+					     generador de la documentacion no dependa del Postgres de docker-compose. -->
+					<execution>
+						<id>start-app-for-openapi</id>
+						<phase>pre-integration-test</phase>
+						<goals>
+							<goal>start</goal>
+						</goals>
+						<configuration>
+							<profiles>
+								<profile>openapi</profile>
+							</profiles>
+						</configuration>
+					</execution>
+					<execution>
+						<id>stop-app-for-openapi</id>
+						<phase>post-integration-test</phase>
+						<goals>
+							<goal>stop</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- Escribe docs/openapi.json a partir del documento que sirve la aplicacion.
+			     Se ejecuta con `./mvnw verify`. -->
+			<plugin>
+				<groupId>org.springdoc</groupId>
+				<artifactId>springdoc-openapi-maven-plugin</artifactId>
+				<version>1.5</version>
+				<configuration>
+					<apiDocsUrl>http://localhost:18080/v3/api-docs</apiDocsUrl>
+					<outputFileName>openapi.json</outputFileName>
+					<outputDir>${project.basedir}/../docs</outputDir>
+				</configuration>
+				<executions>
+					<execution>
+						<id>generate-openapi-document</id>
+						<phase>integration-test</phase>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
