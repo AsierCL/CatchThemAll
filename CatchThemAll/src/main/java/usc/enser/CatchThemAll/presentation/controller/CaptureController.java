@@ -1,13 +1,14 @@
 package usc.enser.CatchThemAll.presentation.controller;
 
-import java.util.concurrent.CompletableFuture;
-import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.io.IOException;
 
-import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,16 +18,24 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import usc.enser.CatchThemAll.presentation.dto.CaptureCreateRequest;
 import usc.enser.CatchThemAll.presentation.dto.CaptureResponse;
+import usc.enser.CatchThemAll.presentation.dto.ErrorDTO;
 import usc.enser.CatchThemAll.service.interfaces.ICurrentUserService;
 import usc.enser.CatchThemAll.service.interfaces.ICaptureService;
 
 @RestController
 @RequestMapping("/captures")
+@Tag(name = "Capturas", description = "Capturas de famosos por reconocimiento facial e historial propio.")
 public class CaptureController {
 
     private final ICaptureService captureService;
@@ -40,25 +49,138 @@ public class CaptureController {
         this.executor = grpcExecutor;
     }
 
-    @PostMapping("/{id}/identify")
+    /**
+     * Identifica a un famoso en la foto y, si la similitud alcanza el umbral, registra la captura.
+     *
+     * <p>El cuerpo es {@code multipart/form-data} con dos partes simples: {@code image} (archivo) y
+     * {@code name} (texto). Antes se enviaba un unico parte {@code data} con un JSON anidado, que ni
+     * Swagger UI ni la mayoria de los clientes HTTP pueden componer sin trabajo extra.</p>
+     */
+    @Operation(
+            operationId = "identifyFamous",
+            summary = "Identificar un famoso en una foto",
+            description = """
+                    Envia la foto al servicio de reconocimiento facial y compara el rostro contra las
+                    muestras cargadas para el famoso indicado. La similitud viaja en `similarity`
+                    (0 a 1) y el campo `captured` indica si el usuario ya tenia registrada esa captura
+                    antes de esta peticion.
+
+                    La respuesta es asincronica: el controlador devuelve un `CompletableFuture` que se
+                    completa cuando el servicio gRPC de reconocimiento responde.
+
+                    > El `{id}` del path se usa como identificador del usuario dueno de la captura y hoy
+                    > no se contrasta con el token. Ver `TODO.md` en la raiz del repositorio.
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Identificacion resuelta"),
+            @ApiResponse(responseCode = "400", description = "Falta la imagen, el nombre esta vacio o el cuerpo es invalido",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
+            @ApiResponse(responseCode = "404", description = "El usuario o el famoso no existen, o el servicio no encontro coincidencia",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
+            @ApiResponse(responseCode = "413", description = "La imagen supera el limite de 10MB",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
+            @ApiResponse(responseCode = "415", description = "Content-Type no soportado",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
+            @ApiResponse(responseCode = "422", description = "La imagen no se pudo decodificar o no contiene caras",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
+            @ApiResponse(responseCode = "503", description = "El servicio de reconocimiento no esta disponible",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
+            @ApiResponse(responseCode = "504", description = "El servicio de reconocimiento no respondio a tiempo",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class)))
+    })
+    @PostMapping(value = "/{id}/identify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public CompletableFuture<CaptureResponse> identify(
+            @Parameter(description = "Identificador del usuario dueno de la captura", required = true)
             @PathVariable UUID id,
             @RequestPart("image") MultipartFile image,
-            @RequestPart("data") @Valid CaptureCreateRequest request) throws IOException{
+            @RequestPart("name") @NotBlank String name) throws IOException {
 
-        return captureService.identify(id,image,request);
+        return captureService.identify(id, image, new CaptureCreateRequest(name));
     }
 
-    @PostMapping("/create")
+    /**
+     * Envia una foto al servicio de reconocimiento facial para registrar el rostro de un famoso.
+     *
+     * <p>El cuerpo es {@code multipart/form-data} con dos partes simples: {@code image} (archivo) y
+     * {@code name} (texto).</p>
+     */
+    @Operation(
+            operationId = "createFamousFace",
+            summary = "Registrar el rostro de un famoso",
+            description = """
+                    Carga una foto al servicio de reconocimiento facial para guardar el embedding del
+                    famoso indicado. Es una operacion de carga de datos: no crea una captura, solo la
+                    muestra de referencia que despues usan las identificaciones.
+
+                    La respuesta es asincronica y devuelve `201 Created` sin cuerpo cuando el servicio
+                    gRPC confirma la creacion.
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Rostro registrado"),
+            @ApiResponse(responseCode = "400", description = "Falta la imagen, el nombre esta vacio o el cuerpo es invalido",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
+            @ApiResponse(responseCode = "413", description = "La imagen supera el limite de 10MB",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
+            @ApiResponse(responseCode = "415", description = "Content-Type no soportado",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
+            @ApiResponse(responseCode = "422", description = "La imagen no se pudo decodificar",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
+            @ApiResponse(responseCode = "503", description = "El servicio de reconocimiento no esta disponible",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
+            @ApiResponse(responseCode = "504", description = "El servicio de reconocimiento no respondio a tiempo",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class)))
+    })
+    @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public CompletableFuture<ResponseEntity<Void>> create(
             @RequestPart("image") MultipartFile image,
-            @RequestPart("data") @Valid CaptureCreateRequest request) throws IOException {
+            @RequestPart("name") @NotBlank String name) throws IOException {
 
-        return captureService.create(image, request)
+        return captureService.create(image, new CaptureCreateRequest(name))
                 .thenApply(response ->
                         ResponseEntity.status(HttpStatus.CREATED).build()
                 );
     }
 
+    /**
+     * Historial de capturas del usuario autenticado, de la mas reciente a la mas antigua.
+     */
+    @Operation(
+            operationId = "listMyCaptures",
+            summary = "Historial de capturas propias",
+            description = "Capturas del usuario autenticado, de la mas reciente a la mas antigua.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Historial de capturas"),
+            @ApiResponse(responseCode = "401", description = "Falta el token o es invalido",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
+            @ApiResponse(responseCode = "404", description = "El usuario del token ya no existe",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class)))
+    })
+    @GetMapping("/me")
+    public List<CaptureResponse> findMine() {
+        return captureService.findMine(currentUserService.getCurrentUserId());
+    }
 
+    /**
+     * Una captura concreta del usuario autenticado.
+     */
+    @Operation(
+            operationId = "getMyCapture",
+            summary = "Consultar una captura propia",
+            description = "Una captura del usuario autenticado. Devuelve `404` si la captura no existe o pertenece a otro usuario.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Captura encontrada"),
+            @ApiResponse(responseCode = "400", description = "Identificador con formato invalido",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Falta el token o es invalido",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
+            @ApiResponse(responseCode = "404", description = "La captura no existe o pertenece a otro usuario",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class)))
+    })
+    @GetMapping("/me/{captureId}")
+    public CaptureResponse findMineById(
+            @Parameter(description = "Identificador de la captura", required = true) @PathVariable UUID captureId) {
+        return captureService.findMineById(currentUserService.getCurrentUserId(), captureId);
+    }
 }

@@ -18,6 +18,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
@@ -41,6 +42,19 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorDTO> handleValidation(MethodArgumentNotValidException exception, HttpServletRequest request) {
         List<String> details = exception.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .toList();
+        return build(HttpStatus.BAD_REQUEST, "validation failed", request, details);
+    }
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ErrorDTO> handleMethodValidation(HandlerMethodValidationException exception,
+                                                           HttpServletRequest request) {
+        List<String> details = exception.getParameterValidationResults().stream()
+                .flatMap(result -> {
+                    String parameter = result.getMethodParameter().getParameterName();
+                    return result.getResolvableErrors().stream()
+                            .map(error -> (parameter == null ? "" : parameter + ": ") + error.getDefaultMessage());
+                })
                 .toList();
         return build(HttpStatus.BAD_REQUEST, "validation failed", request, details);
     }
