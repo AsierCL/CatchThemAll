@@ -13,6 +13,8 @@ public record TokenResponse(
         @Schema(description = "Esquema de autorizacion que debe usarse en el header `Authorization`.", example = "Bearer")
         String tokenType,
 
+        String refreshToken,
+
         @Schema(description = "Vigencia del token en segundos.", example = "900")
         long expiresIn
 ) {

@@ -161,6 +161,7 @@ public class UserController {
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class)))
     })
 
+
     @PutMapping("/me")
     @JsonView(UserResponse.Full.class)
     public UserResponse putUpdate(@PathVariable UUID id, @RequestBody @Valid UserPutUpdateRequest request) throws AccessDeniedException {
@@ -171,25 +172,6 @@ public class UserController {
         }
     }
 
-    @PutMapping("/me")
-    @Operation(
-            operationId = "patchUser",
-            summary = "Actualizar un usuario (PATCH)",
-            description = """
-                    Aceptado por compatibilidad, pero **no** es una actualizacion parcial: exige los
-                    tres campos y reemplaza el perfil igual que `PUT /users/{id}`.
-
-                    Ver `TODO.md` en la raiz del repositorio.
-                    """)
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Usuario actualizado"),
-            @ApiResponse(responseCode = "400", description = "Cuerpo invalido o campos faltantes",
-                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
-            @ApiResponse(responseCode = "404", description = "El usuario no existe",
-                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
-            @ApiResponse(responseCode = "409", description = "El nombre ya esta en uso",
-                    content = @Content(schema = @Schema(implementation = ErrorDTO.class)))
-    })
     @PatchMapping(
             value = "/me",
             consumes = "application/json-patch+json"

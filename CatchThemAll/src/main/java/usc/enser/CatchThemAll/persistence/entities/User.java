@@ -56,4 +56,7 @@ public class User {
     )
 
     private Set<User> friends = new HashSet<>();
+
+    @OneToMany(mappedBy = "user")
+    private List<RefreshToken> refreshToken = new ArrayList<>();
 }

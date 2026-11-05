@@ -3,7 +3,6 @@ package usc.enser.CatchThemAll.service.interfaces;
 import java.util.List;
 import java.util.UUID;
 
-import com.github.fge.jsonpatch.JsonPatch;
 import tools.jackson.databind.JsonNode;
 import usc.enser.CatchThemAll.presentation.dto.UserResponse;
 import usc.enser.CatchThemAll.presentation.dto.UserPutUpdateRequest;
