@@ -75,16 +75,27 @@ class CaptureService(capture_pb2_grpc.CaptureServiceServicer):
                     "No existen embeddings para este famoso"
                 )
 
-            best_similarity = max(
-                self.compare_embedding(embedding, original)
-                for embedding in embeddings
-                for original in originals
-            )
+            best_similarity = -1.0
+            best_embedding = None
+            for embedding in embeddings:
+                for original in originals:
+                    similarity = self.compare_embedding(embedding, original)
+                    if similarity > best_similarity:
+                        best_similarity = similarity
+                        best_embedding = embedding
 
             if best_similarity <= 0.7:
                 context.abort(
                     grpc.StatusCode.NOT_FOUND,
                     "No se ha encontrado coincidencia con este famoso"
+                )
+            elif best_similarity >= 0.85:
+                self.cursor.execute(
+                    """
+                    INSERT INTO face_embeddings(name, embedding)
+                    VALUES (%s, %s)
+                    """,
+                    (request.name, best_embedding)
                 )
 
             return capture_pb2.CaptureIdentifyResponse(

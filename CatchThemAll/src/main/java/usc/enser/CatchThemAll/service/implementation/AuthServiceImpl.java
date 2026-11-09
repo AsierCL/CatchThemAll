@@ -121,7 +121,11 @@ public class AuthServiceImpl implements IAuthService {
             );
         }
 
-        return generateToken(token.getUser(), token.getToken());
+        refreshTokenRepository.delete(token);
+
+        RefreshToken newRefreshToken = refreshTokenService.create(token.getUser().getUserId());
+
+        return generateToken(token.getUser(), newRefreshToken.getToken());
     }
 
     private TokenResponse generateToken(User user, String refreshToken){
