@@ -1,6 +1,7 @@
 package usc.enser.CatchThemAll.presentation.controller;
 
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,11 +14,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import usc.enser.CatchThemAll.presentation.dto.ErrorDTO;
-import usc.enser.CatchThemAll.presentation.dto.TokenResponse;
-import usc.enser.CatchThemAll.presentation.dto.UserLogin;
-import usc.enser.CatchThemAll.presentation.dto.UserRegister;
+import usc.enser.CatchThemAll.presentation.dto.*;
 import usc.enser.CatchThemAll.service.interfaces.IAuthService;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
@@ -71,4 +71,7 @@ public class AuthController {
     public TokenResponse register(@RequestBody @Valid UserRegister request) {
         return authService.register(request);
     }
+
+    @PostMapping("/refresh")
+    public TokenResponse refreshToken(@RequestBody RefreshRequest request){ return authService.refresh(request); }
 }
