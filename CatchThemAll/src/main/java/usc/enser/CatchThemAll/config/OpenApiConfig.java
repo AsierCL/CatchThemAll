@@ -40,9 +40,19 @@ public class OpenApiConfig {
                                 de una fotografia validada por el servicio de reconocimiento facial.
 
                                 ## Autenticacion
-                                `POST /auth/register` y `POST /auth/login` devuelven un token JWT (`HS256`, vigencia de
-                                15 minutos). Enviarlo como `Authorization: Bearer <token>` en las operaciones que lo
-                                requieren.
+                                `POST /auth/register` y `POST /auth/login` devuelven un par de tokens: un JWT
+                                (`HS256`, vigencia de 15 minutos) y un `refreshToken` opaco de 24 horas. El JWT se
+                                envia como `Authorization: Bearer <token>` y se renueva con `POST /auth/refresh`.
+
+                                ## Cache y validacion
+                                Varias lecturas se sirven desde una cache en memoria: `GET /famous` hasta 24 horas,
+                                `GET /users/ranking` hasta 1 hora y `GET /captures/me` hasta 15 minutos. Durante esa
+                                ventana la respuesta puede no reflejar la ultima escritura.
+
+                                Todas las respuestas llevan `ETag`. Si se repite la peticion con
+                                `If-None-Match`, el servidor puede contestar `304 Not Modified` sin cuerpo. Las
+                                cabeceras incluyen `Cache-Control: no-store`, asi que ningun intermediario guarda
+                                la respuesta: la revalidacion por `ETag` solo ahorra el cuerpo, no la ida y vuelta.
 
                                 ## Errores
                                 Todos los errores comparten el esquema `ErrorDTO`: `timestamp`, `status`, `error`,

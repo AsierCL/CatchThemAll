@@ -19,7 +19,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
         description = """
                 Perfil de usuario. Incluye siempre `userId`, `name`, `score`, `captureCount` y `friendIds`;
                 `photoUrl` y `description` aparecen solo en las respuestas que usan la vista completa
-                (`GET /users/{id}/full`, `GET /users/me`, `PUT`/`PATCH /users/{id}` y
+                (`GET /users/{id}/full`, `GET /users/me`, `PUT`/`PATCH /users/me` y
                 `GET /users/{id}/friends/{friendId}`).""")
 public record UserResponse(
 
@@ -37,7 +37,12 @@ public record UserResponse(
         @JsonView(Full.class)
         String photoUrl,
 
-        @Schema(description = "Puntaje acumulado por capturas. `0` cuando nunca se asigno.", example = "120")
+        @Schema(
+                description = """
+                        Puntaje acumulado. Se suma al capturar por primera vez a un famoso: la similitud por
+                        1000, 700, 400 o 100 segun su categoria (legendary, epic, rare, common). `0` cuando
+                        nunca se asigno.""",
+                example = "120")
         @JsonView(Basic.class)
         int score,
 

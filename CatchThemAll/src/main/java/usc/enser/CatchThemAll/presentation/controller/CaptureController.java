@@ -61,6 +61,10 @@ public class CaptureController {
                     token. Cuando no coincide, la peticion se rechaza en lugar de registrar la captura
                     a nombre de otro usuario.
 
+                    Si es la primera vez que el usuario captura a ese famoso, la operacion suma puntaje a su
+                    perfil: la similitud se multiplica por 1000, 700, 400 o 100 segun la categoria del famoso
+                    (legendary, epic, rare, common). Ese puntaje alimenta `GET /users/ranking`.
+
                     La respuesta es asincronica: el controlador devuelve un `CompletableFuture` que se
                     completa cuando el servicio gRPC de reconocimiento responde.
 
@@ -154,7 +158,13 @@ public class CaptureController {
     @Operation(
             operationId = "listMyCaptures",
             summary = "Historial de capturas propias",
-            description = "Capturas del usuario autenticado, de la mas reciente a la mas antigua.",
+            description = """
+                    Capturas del usuario autenticado, de la mas reciente a la mas antigua.
+
+                    > La respuesta se sirve desde cache hasta 15 minutos y ninguna escritura la invalida,
+                    > asi que una captura recien registrada puede no aparecer todavia. Ver `TODO.md` en la
+                    > raiz del repositorio.
+                    """,
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Historial de capturas"),
