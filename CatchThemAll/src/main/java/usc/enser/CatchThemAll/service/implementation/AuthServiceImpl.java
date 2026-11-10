@@ -103,7 +103,7 @@ public class AuthServiceImpl implements IAuthService {
 
     public TokenResponse refresh(RefreshRequest request) {
 
-        String requestToken = request.token();
+        String requestToken = request.refreshToken();
 
         RefreshToken token = refreshTokenRepository
                 .findByToken(requestToken)

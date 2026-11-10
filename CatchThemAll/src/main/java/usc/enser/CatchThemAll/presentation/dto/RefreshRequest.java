@@ -20,6 +20,6 @@ public record RefreshRequest(
                 requiredMode = Schema.RequiredMode.REQUIRED)
         @NotNull
         @NotBlank
-        String token
+        String refreshToken
 ) {
 }
