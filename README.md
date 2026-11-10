@@ -38,13 +38,22 @@ que ya no existe: `clean` lo resuelve.
 
 ### Consumir la API
 
-1. `POST /auth/register` o `POST /auth/login` devuelve un token JWT (HS256, 15 minutos).
-2. Enviarlo como `Authorization: Bearer <token>` en las operaciones que lo requieren.
-3. Todos los errores comparten el esquema `ErrorDTO`: `timestamp`, `status`, `error`, `message`,
+1. `POST /auth/register` o `POST /auth/login` devuelve un par de tokens: `token` (JWT, HS256, 15
+   minutos) y `refreshToken` (opaco, 24 horas).
+2. Enviar el JWT como `Authorization: Bearer <token>` en las operaciones que lo requieren.
+3. Cuando el JWT vence, `POST /auth/refresh` lo renueva enviando el `refreshToken`. El refresh token
+   se **rota** en cada llamada: el que se envió queda inválido y hay que guardar el nuevo. Reutilizar
+   uno viejo devuelve `404`; uno vencido devuelve `401` y obliga a iniciar sesión otra vez.
+4. Editar el perfil propio: `PUT /users/me` reemplaza los tres campos, `PATCH /users/me` aplica un
+   documento JSON Patch (RFC 6902) con `Content-Type: application/json-patch+json`. Hoy ambas rutas
+   devuelven `500` porque el handler declara un `@PathVariable` que la ruta no provee (ver
+   [`TODO.md`](TODO.md)).
+5. Todos los errores comparten el esquema `ErrorDTO`: `timestamp`, `status`, `error`, `message`,
    `path` y `details`.
 
-Los endpoints de capturas usan `multipart/form-data` con dos partes, `image` (archivo) y `data` (JSON
-con el nombre del famoso). Los valores de enum viajan en minúsculas (`legendary`, `politic`, ...).
+Los endpoints de capturas usan `multipart/form-data` con partes simples: `image` (archivo) más `name`
+(texto) en `POST /captures/{id}/identify`, y `image` más `data` (texto) en `POST /captures/create`.
+Los valores de enum viajan en minúsculas (`legendary`, `politic`, ...).
 
 ## Puesta en marcha
 

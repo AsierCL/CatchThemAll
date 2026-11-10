@@ -1,104 +1,137 @@
 # TODO — pendientes acordados
 
 Registro de los problemas conocidos de la API que quedaron fuera del trabajo de documentación
-OpenAPI (`docs/openapi.json`). La documentación **describe el comportamiento actual**, incluidas las
+OpenAPI (`docs/openapi.json`). La documentación describe el comportamiento actual, incluidas las
 inconsistencias listadas acá.
 
-Los arreglos de estos puntos van en una rama aparte de errores lógicos. Cuando se resuelvan, hay que
-regenerar `docs/openapi.json` con `./mvnw verify` (ver `README.md`) y revisar si cambia el alcance de
-los endpoints en `config/OpenApiConfig.java`.
+Cuando se resuelva cualquiera de estos puntos hay que regenerar `docs/openapi.json` con
+`./mvnw verify` (ver `README.md`) y revisar si cambia el alcance de los endpoints en
+`config/OpenApiConfig.java`.
 
 ## Pendientes
 
-### 0. Unificar la resolución case-insensitive de enums
-
-La misma política (recortar espacios, comparar sin distinguir mayúsculas, rechazar lo desconocido)
-está implementada tres veces: en `FamousCategories.fromValue`, en `FamousTypes.fromValue` y en
-`EnumConversionConfig.CaseInsensitiveEnumConverter`. Si cambia la semántica, hay que tocar los tres
-lugares. Conviene un único helper compartido.
-
-Detectado por la revisión de legibilidad (R2-2, sugerencia), no bloquea nada.
-
 ### 1. El filtro de seguridad deja pasar todas las peticiones
 
-`SecurityConfig.securityFilterChain` usa `.anyRequest().permitAll()`. Está así a propósito para
-facilitar las pruebas en desarrollo y **se va a cambiar en las versiones finales**.
+`SecurityConfig.securityFilterChain` sigue con `.anyRequest().permitAll()`. Está así a propósito para
+facilitar las pruebas en desarrollo y se va a cambiar en las versiones finales.
 
-Estado en la documentación: el esquema `bearerAuth` está declarado y solo las operaciones que
-resuelven el usuario autenticado (`GET /users/me`, `GET /captures/me`, `GET /captures/me/{captureId}`)
-lo marcan como requerido.
+Estado en la documentación: `bearerAuth` está declarado y las operaciones que resuelven el usuario
+autenticado lo marcan como requerido (`GET /users/me`, `PUT`/`PATCH /users/me`,
+`DELETE /users/{id}/friends/{friendId}`, `POST /captures/{id}/identify`, `GET /captures/me` y
+`GET /captures/me/{captureId}`), pero el servidor no rechaza una petición sin token en las que no
+tocan al usuario autenticado.
 
-Qué falta: definir las reglas reales por método y ruta, y revisar que `permitAll()` no quede en
-producción.
+### 2. `PUT` y `PATCH /users/me` no pueden resolver el `id` que declaran
 
-### 2. `POST /captures/{id}/identify` no valida el dueño de la captura
+Los dos handlers reciben `@PathVariable UUID id`, pero la ruta mapeada es `/users/me` y no tiene
+variable. Spring falla al resolver el argumento antes de ejecutar el método, así que **toda** petición
+a `PUT /users/me` y `PATCH /users/me` termina en `500`, con token válido o sin él.
 
-El `{id}` del path se usa como identificador del usuario dueño de la captura, pero no se contrasta
-con el `sub` del token: cualquiera puede registrar capturas a nombre de otro usuario.
+Qué falta: decidir el contrato — quitar el `@PathVariable` y usar
+`currentUserService.getCurrentUserId()`, o mover los endpoints a `/users/{id}`. Es el bug más caro de
+los que quedan: hoy la edición de perfil no funciona por ninguna vía.
 
-Qué falta: mover el endpoint a `/captures/me/identify` (o derivar el usuario del token e ignorar el
-path), y actualizar la documentación en consecuencia.
+En la documentación el parámetro está oculto (`@Parameter(hidden = true)`) para que Swagger UI pueda
+enviar la petición, y la operación documenta `500`.
 
-### 3. `captured` se calcula antes de persistir
+### 3. El rechazo por propiedad devuelve `500` en lugar de `403`
+
+`CaptureController.identify`, `UserController.putUpdate`, `UserController.patchUpdate` y
+`UserController.removeFriend` lanzan `java.nio.file.AccessDeniedException`, pero
+`GlobalExceptionHandler` captura `org.springframework.security.access.AccessDeniedException`. Son
+clases distintas: la excepción cae en el handler genérico y responde `500 unexpected error`.
+
+Qué falta: usar la excepción de Spring Security (o una propia) y documentar `403`.
+
+### 4. Los partes de texto multipart no se validan como entrada
+
+`identify` usa `@RequestPart("name") @NotBlank @NotNull String` y `create` usa lo mismo sobre
+`@RequestPart("data")`. La validación de esas anotaciones produce
+`HandlerMethodValidationException`, que ningún `@ExceptionHandler` captura, así que un valor vacío
+responde `500` en lugar de `400`.
+
+Qué falta: añadir el handler de `HandlerMethodValidationException` en `GlobalExceptionHandler`
+(devolviendo `400 validation failed` con `details`, como el resto de las validaciones).
+
+### 5. El parte de texto de `create` se llama `data` y el de `identify` se llama `name`
+
+`POST /captures/create` espera `image` + `data`, y `POST /captures/{id}/identify` espera
+`image` + `name`. Son el mismo concepto con dos nombres, y en `create` el nombre `data` sugiere un
+JSON que no existe: es texto plano.
+
+Qué falta: unificar en `name`.
+
+### 6. `captured` se calcula antes de persistir
 
 En `CaptureServiceImpl.identify` el campo `captured` se resuelve con
-`captureRepository.findByCaptureFamousAndUser(...)` **antes** de guardar la captura nueva, así que la
+`captureRepository.findByCaptureFamousAndUser(...)` antes de guardar la captura nueva, así que la
 primera captura de un famoso siempre devuelve `false`.
 
 Qué falta: decidir la semántica y el nombre del campo. Si significa "ya la tenía antes de esta
-petición", el cálculo actual es correcto pero el nombre es engañoso; si significa "quedó capturado",
-hay que recalcularlo después del `save`.
+petición", el cálculo es correcto pero el nombre engaña; si significa "quedó capturado", hay que
+recalcularlo después del `save`.
 
 Relacionado: no existe restricción de unicidad, así que se acumulan capturas repetidas del mismo
 famoso por el mismo usuario.
 
-### 4. `@NotBlank` sobre un `UUID` rompe la validación
+### 7. Unificar la resolución case-insensitive de enums
 
-`FriendRequest.friendId` es de tipo `UUID` y está anotado con `@NotNull` **y** `@NotBlank`.
-Hibernate Validator no tiene validador para `@NotBlank` sobre `UUID`, por lo que toda petición a
-`POST /users/{id}/friends` termina en `500` en lugar de `400`.
+La misma política (recortar espacios, comparar sin distinguir mayúsculas, rechazar lo desconocido)
+está implementada tres veces: en `FamousCategories.fromValue`, en `FamousTypes.fromValue` y en
+`EnumConversionConfig.CaseInsensitiveEnumConverter`. Si cambia la semántica hay que tocar los tres
+lugares.
 
-Qué falta: quitar `@NotBlank` y dejar solo `@NotNull`.
+### 8. `DELETE /users/{id}` no verifica el dueño del perfil
 
-### 5. `PUT` y `PATCH /users/{id}` tienen la misma semántica
+A diferencia de `PUT`, `PATCH` y `DELETE /users/{id}/friends/{friendId}`, el borrado de cuenta no
+compara el path con el usuario del token: cualquiera puede eliminar la cuenta de otro.
 
-Ambas operaciones comparten el mismo servicio y un cuerpo cuyos tres campos son obligatorios
-(`@NotNull` en `name`, `description` y `photoUrl`), de modo que `PATCH` **no** es una actualización
-parcial: reemplaza el perfil completo.
+### 9. Los refresh tokens se guardan en claro y se acumulan
 
-Estado en la documentación: se documenta tal cual, con una nota explícita en la operación
-`patchUser`.
+`RefreshToken.token` es un `UUID.randomUUID()` persistido sin hashear, y cada `login` o `register`
+crea uno nuevo sin borrar los anteriores del mismo usuario. Se rotan al usarse
+(`POST /auth/refresh` borra el viejo), pero un usuario que inicia sesión muchas veces acumula filas
+válidas durante 24 horas.
 
-Qué falta: decidir si `PATCH` acepta campos opcionales (con un DTO propio y actualización parcial
-real) o si se elimina y queda solo `PUT`.
+Qué falta: decidir si se hashea el token en la base y si el login debe invalidar los anteriores.
 
-### 6. El multipart de capturas usa un parte `data` con JSON anidado
+### 10. `RefreshRequest` declara validaciones que nunca se ejecutan
 
-`POST /captures/create` y `POST /captures/{id}/identify` reciben `multipart/form-data` con dos partes:
-`image` (archivo) y `data` (documento JSON con `name`). Ese parte anidado no se puede componer desde
-Swagger UI ni desde la mayoría de los clientes HTTP sin trabajo extra.
+`AuthController.refreshToken` recibe `@RequestBody RefreshRequest request` sin `@Valid`, así que
+`@NotNull` y `@NotBlank` sobre `token` no corren nunca. Un cuerpo con `token` nulo termina en `404`
+en lugar de `400`.
 
-Qué falta: aplanar el cuerpo a dos partes simples, `image` y `name`, con `name` validado como texto.
-Cuando se haga, hay que ajustar las anotaciones de `CaptureController`, devolver el `@Schema` que
-corresponda al DTO y regenerar la documentación.
+### 11. Restos sin uso
 
-## Cambios de contrato ya aplicados en esta rama
+- `presentation/dto/CaptureCreateRequest.java` quedó **vacío** (0 bytes) desde que el multipart se
+  aplanó y el servicio recibe un `String`.
+- `presentation/dto/CaptureCreateResponse.java` es un DTO vacío que ningún endpoint devuelve.
+- `FamousRepository` conserva consultas sin uso (`findAllByOrderByPokedexNumberAsc` ya se usa, pero
+  `findByType`, `findByCategory` y compañía quedaron sueltas).
 
-### 7. Valores de enum normalizados a minúsculas
+## Resuelto por las contribuciones posteriores a la primera documentación
+
+Se dejan registrados para que no se reabran:
+
+- `POST /captures/{id}/identify` ahora contrasta el `{id}` con el usuario del token (aunque el
+  rechazo devuelva `500`, ver punto 3).
+- `@NotBlank` sobre el `UUID` de `FriendRequest` fue eliminado: el endpoint de amistades dejó de
+  romper con `500`.
+- `PUT` y `PATCH` se separaron: `PATCH /users/me` recibe un documento JSON Patch real.
+- El multipart de capturas se aplanó a partes simples (aunque el nombre del parte siga desparejo,
+  ver punto 5).
+- `GlobalExceptionHandler.handleResponseStatus` ya no puede construir un `ErrorDTO` con `message`
+  nulo.
+- `GET /famous` sin filtros ordena por `pokedexNumber`.
+- `FacialRecognition/src/capture_service/mierda_test.py` fue eliminado.
+
+## Cambios de contrato ya aplicados
+
+### Valores de enum normalizados a minúsculas
 
 `FamousCategories` y `FamousTypes` viajan por la API en minúsculas (`legendary`, `epic`, `rare`,
 `common`, `politic`, `actor`, `writer`, `musician`, `teacher`, `meme`) y se aceptan sin distinguir
 mayúsculas, tanto en el cuerpo JSON como en los query params de `GET /famous`.
 
-La base de datos **no** cambió: sigue persistiendo el nombre de la constante (`Legendary`), porque la
+La base de datos no cambió: sigue persistiendo el nombre de la constante (`Legendary`), porque la
 normalización se aplica solo en el borde HTTP.
-
-## Otros hallazgos (no acordados, sin cambios)
-
-- `PUT`/`PATCH` y `DELETE /users/{id}` no verifican que el usuario autenticado sea el dueño del
-  perfil.
-- `CaptureCreateResponse` es un DTO vacío y sin uso.
-- `GlobalExceptionHandler.handleResponseStatus` puede construir un `ErrorDTO` con `message` nulo
-  cuando la excepción no trae `reason` (`throw new ResponseStatusException(status)`).
-- `GET /famous` sin filtros devuelve los famosos sin orden definido; las variantes filtradas sí
-  ordenan por `pokedexNumber`.
