@@ -8,9 +8,9 @@ import jakarta.validation.constraints.Size;
 @Schema(
         name = "UserPutUpdateRequest",
         description = """
-                Cuerpo de actualizacion de perfil. Los tres campos son obligatorios: la operacion
-                reemplaza el perfil completo, tanto en `PUT` como en `PATCH`.
-                Ver `TODO.md` en la raiz del repositorio.""")
+                Cuerpo de `PUT /users/me`. Los tres campos son obligatorios: la operacion reemplaza el
+                perfil completo. Para cambios parciales usar `PATCH /users/me`, que recibe un documento
+                JSON Patch (RFC 6902).""")
 public record UserPutUpdateRequest(
 
         @Schema(

@@ -142,29 +142,30 @@ public class UserController {
     }
 
     @Operation(
-            operationId = "replaceUser",
-            summary = "Actualizar un usuario",
+            operationId = "putCurrentUser",
+            summary = "Reemplazar el perfil propio",
             description = """
-                    Reemplaza el perfil: los tres campos son obligatorios en el cuerpo. No verifica
-                    que el usuario autenticado coincida con `{id}`.
+                    Reemplaza el perfil del usuario autenticado: los tres campos del cuerpo son
+                    obligatorios y el nombre tiene que seguir siendo unico. Solo se puede modificar el
+                    perfil propio.
 
-                    Ver `TODO.md` en la raiz del repositorio: `PUT` y `PATCH` comparten la misma
-                    semantica de reemplazo total.
-                    """)
+                    > La ruta es `/users/me`, pero el handler todavia declara un `@PathVariable` que la
+                    > ruta no provee, asi que hoy toda peticion termina en `500`. Ver `TODO.md` en la
+                    > raiz del repositorio.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Usuario actualizado"),
-            @ApiResponse(responseCode = "400", description = "Cuerpo invalido o campos faltantes",
+            @ApiResponse(responseCode = "200", description = "Perfil reemplazado",
+                    content = @Content(schema = @Schema(implementation = UserResponse.class))),
+            @ApiResponse(responseCode = "415", description = "Content-Type no soportado",
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
-            @ApiResponse(responseCode = "404", description = "El usuario no existe",
-                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
-            @ApiResponse(responseCode = "409", description = "El nombre ya esta en uso",
+            @ApiResponse(responseCode = "500", description = "El handler no puede resolver el `id` del path y falla antes de tocar el perfil",
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class)))
     })
-
-
     @PutMapping("/me")
     @JsonView(UserResponse.Full.class)
-    public UserResponse putUpdate(@PathVariable UUID id, @RequestBody @Valid UserPutUpdateRequest request) throws AccessDeniedException {
+    public UserResponse putUpdate(@Parameter(hidden = true) @PathVariable UUID id,
+                                 @RequestBody @Valid UserPutUpdateRequest request) throws AccessDeniedException {
         if(currentUserService.getCurrentUserId().equals(id)){
             return userService.putUpdate(id, request);
         }else {
@@ -172,12 +173,44 @@ public class UserController {
         }
     }
 
+    @Operation(
+            operationId = "patchCurrentUser",
+            summary = "Aplicar un parche JSON al perfil propio",
+            description = """
+                    Aplica un documento JSON Patch (RFC 6902) sobre el perfil del usuario autenticado.
+                    Es una actualizacion parcial de verdad: se envian solo las operaciones de los
+                    campos que cambian, y el nombre resultante no puede quedar vacio ni duplicado.
+
+                    El `Content-Type` tiene que ser `application/json-patch+json`.
+
+                    > La ruta es `/users/me`, pero el handler todavia declara un `@PathVariable` que la
+                    > ruta no provee, asi que hoy toda peticion termina en `500`. Ver `TODO.md` en la
+                    > raiz del repositorio.
+                    """,
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    description = "Array de operaciones JSON Patch sobre `/name`, `/description` o `/photoUrl`.",
+                    content = @Content(
+                            mediaType = "application/json-patch+json",
+                            schema = @Schema(
+                                    type = "array",
+                                    example = "[{\"op\":\"replace\",\"path\":\"/description\",\"value\":\"Cazadora de famosos\"}]"))),
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Perfil parcheado",
+                    content = @Content(schema = @Schema(implementation = UserResponse.class))),
+            @ApiResponse(responseCode = "415", description = "Content-Type distinto de `application/json-patch+json`",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
+            @ApiResponse(responseCode = "500", description = "El handler no puede resolver el `id` del path y falla antes de tocar el perfil",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class)))
+    })
     @PatchMapping(
             value = "/me",
             consumes = "application/json-patch+json"
     )
     @JsonView(UserResponse.Full.class)
-    public UserResponse patchUpdate(@PathVariable UUID id, @RequestBody JsonNode request) throws AccessDeniedException {
+    public UserResponse patchUpdate(@Parameter(hidden = true) @PathVariable UUID id,
+                                    @RequestBody JsonNode request) throws AccessDeniedException {
         if(currentUserService.getCurrentUserId().equals(id)){
             return userService.patchUpdate(id, request);
         }else {
@@ -272,12 +305,23 @@ public class UserController {
     @Operation(
             operationId = "removeFriend",
             summary = "Quitar una amistad",
-            description = "Elimina la amistad bidireccional.")
+            description = """
+                    Elimina la amistad bidireccional. Solo se pueden quitar amistades propias: el `{id}`
+                    del path tiene que coincidir con el usuario del token.
+
+                    > El rechazo por propiedad todavia devuelve `500` en lugar de `403`. Ver `TODO.md`
+                    > en la raiz del repositorio.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Amistad eliminada"),
             @ApiResponse(responseCode = "400", description = "Identificador con formato invalido",
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Falta el token o es invalido",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
             @ApiResponse(responseCode = "404", description = "La amistad no existe",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
+            @ApiResponse(responseCode = "500", description = "El `{id}` no coincide con el usuario del token",
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class)))
     })
     @DeleteMapping("/{id}/friends/{friendId}")
