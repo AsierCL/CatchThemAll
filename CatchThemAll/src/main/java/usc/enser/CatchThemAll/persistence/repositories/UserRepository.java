@@ -5,8 +5,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
+import org.springframework.data.repository.query.Param;
 import usc.enser.CatchThemAll.persistence.entities.User;
 
 public interface UserRepository extends JpaRepository<User, UUID>{
@@ -30,4 +32,11 @@ public interface UserRepository extends JpaRepository<User, UUID>{
             """)
     List<User> findRanking();
 
+    @Modifying
+    @Query("""
+           UPDATE User u
+           SET u.score = u.score + :points
+           WHERE u.userId = :uuid
+           """)
+    int updateScore (@Param("uuid") UUID id, @Param("points") int points);
 }

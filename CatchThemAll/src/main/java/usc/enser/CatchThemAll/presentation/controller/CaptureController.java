@@ -92,7 +92,6 @@ public class CaptureController {
         }else {
             throw new AccessDeniedException("No puedes subir capturas por otro usuario");
         }
-
     }
 
     @Operation(
