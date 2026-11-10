@@ -62,14 +62,15 @@ public class CaptureController {
                     a nombre de otro usuario.
 
                     Si es la primera vez que el usuario captura a ese famoso, la operacion suma puntaje a su
-                    perfil: la similitud se multiplica por 1000, 700, 400 o 100 segun la categoria del famoso
-                    (legendary, epic, rare, common). Ese puntaje alimenta `GET /users/ranking`.
+                    perfil: cuanto mas alta la similitud y mas rara la categoria del famoso, mas puntos. Ese
+                    puntaje alimenta `GET /users/ranking`.
 
                     La respuesta es asincronica: el controlador devuelve un `CompletableFuture` que se
                     completa cuando el servicio gRPC de reconocimiento responde.
 
-                    > El rechazo por propiedad todavia devuelve `500` en lugar de `403`, y un `name`
-                    > vacio tampoco devuelve `400`. Ver `TODO.md` en la raiz del repositorio.
+                    > El rechazo por propiedad todavia devuelve `500` en lugar de `403`, un `name` vacio
+                    > tampoco devuelve `400`, y la escritura del puntaje no esta garantizada. Ver `TODO.md` en
+                    > la raiz del repositorio.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
@@ -161,9 +162,9 @@ public class CaptureController {
             description = """
                     Capturas del usuario autenticado, de la mas reciente a la mas antigua.
 
-                    > La respuesta se sirve desde cache hasta 15 minutos y ninguna escritura la invalida,
-                    > asi que una captura recien registrada puede no aparecer todavia. Ver `TODO.md` en la
-                    > raiz del repositorio.
+                    > La respuesta se sirve desde cache y ninguna escritura la invalida, asi que una captura
+                    > recien registrada puede no aparecer todavia. La vigencia esta en la seccion de cache del
+                    > documento, y el punto esta abierto en `TODO.md`.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({

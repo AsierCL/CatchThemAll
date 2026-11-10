@@ -43,9 +43,9 @@ public class FamousController {
                     registradas (`captureCount`) y la cantidad de usuarios distintos que lo capturaron
                     (`collectorCount`).
 
-                    > La respuesta se sirve desde cache hasta 24 horas, asi que `captureCount` y
-                    > `collectorCount` pueden quedar desactualizados durante ese lapso. Ver `TODO.md` en la
-                    > raiz del repositorio.
+                    > La respuesta se sirve desde cache, asi que `captureCount` y `collectorCount` pueden
+                    > quedar desactualizados. La vigencia esta en la seccion de cache del documento, y el
+                    > punto esta abierto en `TODO.md` en la raiz del repositorio.
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Listado de famosos"),

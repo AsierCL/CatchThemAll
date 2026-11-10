@@ -75,8 +75,9 @@ public class UserController {
             description = """
                     Usuarios ordenados por puntaje descendente y, a igual puntaje, por nombre.
 
-                    > La respuesta se sirve desde cache hasta 1 hora, asi que el ranking puede no reflejar
-                    > los puntos sumados en ese lapso. Ver `TODO.md` en la raiz del repositorio.
+                    > La respuesta se sirve desde cache, asi que el ranking puede no reflejar los puntos
+                    > sumados en ese lapso. La vigencia esta en la seccion de cache del documento, y el punto
+                    > esta abierto en `TODO.md`.
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Ranking de usuarios"),

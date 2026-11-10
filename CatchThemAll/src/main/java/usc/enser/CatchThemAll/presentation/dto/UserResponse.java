@@ -39,9 +39,8 @@ public record UserResponse(
 
         @Schema(
                 description = """
-                        Puntaje acumulado. Se suma al capturar por primera vez a un famoso: la similitud por
-                        1000, 700, 400 o 100 segun su categoria (legendary, epic, rare, common). `0` cuando
-                        nunca se asigno.""",
+                        Puntaje acumulado. Se suma al capturar por primera vez a un famoso: cuanto mas alta la
+                        similitud y mas rara su categoria, mas puntos. `0` cuando nunca se asigno.""",
                 example = "120")
         @JsonView(Basic.class)
         int score,
