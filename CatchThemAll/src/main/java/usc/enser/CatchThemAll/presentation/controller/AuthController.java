@@ -95,5 +95,5 @@ public class AuthController {
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class)))
     })
     @PostMapping("/refresh")
-    public TokenResponse refreshToken(@RequestBody RefreshRequest request){ return authService.refresh(request); }
+    public TokenResponse refreshToken(@RequestBody @Valid RefreshRequest request){ return authService.refresh(request); }
 }
