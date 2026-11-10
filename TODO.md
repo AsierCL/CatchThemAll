@@ -95,13 +95,7 @@ válidas durante 24 horas.
 
 Qué falta: decidir si se hashea el token en la base y si el login debe invalidar los anteriores.
 
-### 10. `RefreshRequest` declara validaciones que nunca se ejecutan
-
-`AuthController.refreshToken` recibe `@RequestBody RefreshRequest request` sin `@Valid`, así que
-`@NotNull` y `@NotBlank` sobre `refreshToken` no corren nunca. Un cuerpo con `refreshToken` nulo
-termina en `404` en lugar de `400`.
-
-### 11. Restos sin uso
+### 10. Restos sin uso
 
 - `presentation/dto/CaptureCreateRequest.java` quedó **vacío** (0 bytes) desde que el multipart se
   aplanó y el servicio recibe un `String`.
@@ -109,14 +103,14 @@ termina en `404` en lugar de `400`.
 - `FamousRepository` conserva consultas sin uso (`findAllByOrderByPokedexNumberAsc` ya se usa, pero
   `findByType`, `findByCategory` y compañía quedaron sueltas).
 
-### 12. La cache de `GET /famous` congela las estadisticas 24 horas
+### 11. La cache de `GET /famous` congela las estadisticas 24 horas
 
 `FamousServiceImpl.findAll` esta anotado con `@Cacheable(cacheNames = "famous")` y esa cache expira a
 las 24 horas, sin ningun `@CacheEvict` asociado. El problema es que la respuesta incluye
 `captureCount` y `collectorCount`: despues de la primera lectura, el catalogo muestra conteos
 congelados durante un dia entero, aunque entren capturas nuevas.
 
-### 13. La cache de `GET /captures/me` no se invalida al registrar una captura
+### 12. La cache de `GET /captures/me` no se invalida al registrar una captura
 
 `CaptureServiceImpl.findMine` usa `@Cacheable(cacheNames = "captures", key = "#userId")` con 15
 minutos de vigencia. Ninguna escritura la invalida, asi que tras `POST /captures/{id}/identify` el
@@ -124,7 +118,7 @@ historial propio puede seguir sin mostrar la captura recien creada durante ese l
 `ranking` si se limpia (`ScoreServiceImpl.updateScore` tiene `@CacheEvict`), lo que hace la
 inconsistencia todavia mas visible: el ranking sube y el historial no.
 
-### 14. El puntaje se actualiza con un `@Modifying` sin transaccion
+### 13. El puntaje se actualiza con un `@Modifying` sin transaccion
 
 `UserRepository.updateScore` es una consulta `@Modifying` y `ScoreServiceImpl.updateScore` no declara
 `@Transactional`. La llamada ocurre dentro del callback `onSuccess` del futuro de gRPC, o sea fuera
@@ -138,7 +132,7 @@ un error.
 Sin confirmar: hace falta el servicio gRPC levantado para llegar a ese camino. Es lo primero a mirar
 cuando se arregle el resto.
 
-### 15. Ruido de repositorio
+### 14. Ruido de repositorio
 
 - Hay seis archivos `.pyc` versionados bajo `FacialRecognition/src/capture_service/**/__pycache__/`,
   incluido el commit `e1376e7` ("meaningless archives") que solo actualiza binarios compilados.
@@ -146,32 +140,16 @@ cuando se arregle el resto.
 - `application.properties` deja `logging.level.org.springframework.cache=TRACE`: en desarrollo esta
   bien, pero es un nivel muy verboso para cualquier otro entorno.
 
-### 16. La ventana de cache esta escrita en prosa en tres lugares
+## Hallazgos de revision ya resueltos
 
-Las duraciones de cada cache (24 h para `famous`, 1 h para `ranking`, 15 min para `captures`) viven en
-`CacheConfig`, pero tambien estan copiadas en el `info.description` y en la descripcion de cada
-operacion afectada. Si se ajusta un TTL en `CacheConfig`, la documentacion queda mintiendo y nada
-falla para avisarlo.
+La revision `review-013da219192dc7b5` le puso nombre a los tres hallazgos que la anterior habia
+entregado sin texto (`R3-001`, `R3-002`, `R3-003`), y los tres quedaron cerrados en la rama de
+documentacion:
 
-Que falta: decidir donde vive el dato. O se inyectan los TTL como propiedades (`@Value` desde
-`application.properties`) y la documentacion se arma con esos valores, o el documento deja de repetir
-cifras y dice solo "se sirve desde cache" delegando el numero a `CacheConfig`.
-
-Detectado por la revision de legibilidad (`R2-cache-ttl-prose-duplication`).
-
-## Hallazgos de la revision `review-2c19a267d7e24677` sin texto adjunto
-
-El cierre de esa revision aprobo el candidato pero no adjunto el texto de tres hallazgos, solo id,
-lente, ubicacion y severidad. Quedan anotados para interpretarlos cuando se toque esa zona, no como
-acciones decididas.
-
-- `R3-001` (reliability, WARNING, `docs/openapi.json:1`): apunta al documento generado, no a una linea,
-  asi que es una observacion sobre el artefacto completo.
-- `R3-002` (reliability, WARNING, `CaptureController.java:64-66`): cae en el bloque de `identifyFamous`
-  donde se documenta el puntaje por captura. Sospecha: objeta que el documento prometa puntos cuando la
-  actualizacion del puntaje puede fallar (punto 14).
-- `R3-003` (reliability, SUGGESTION, `OpenApiConfig.java:52-55`): cae en la frase de `ETag` y
-  `Cache-Control: no-store` del `info.description`.
+- El `ETag` ya no se anuncia para todas las respuestas, solo para las que tienen cuerpo.
+- El puntaje ya no promete un efecto que no esta garantizado; la nota remite a este archivo.
+- Los multiplicadores del puntaje y las ventanas de cache salieron del texto de las operaciones, que
+es donde se desincronizaban.
 
 ## Resuelto por las contribuciones posteriores a la primera documentación
 
@@ -191,6 +169,12 @@ Se dejan registrados para que no se reabran:
 - El cuerpo de `POST /auth/refresh` pide `refreshToken` y no `token`: el campo se renombro para que el
   nombre coincida con el de la respuesta y con el resto de la documentacion. Rompe a cualquier cliente
   que todavia mande `{"token": "..."}`.
+- Un cuerpo de refresh invalido ya devuelve `400 validation failed` con `details` en lugar del `404`
+  confuso de antes: `AuthController.refreshToken` usa `@Valid`.
+- Las duraciones de cache son propiedades (`cache.famous.ttl`, `cache.ranking.ttl`,
+  `cache.captures.ttl`) que leen tanto `CacheConfig` como `OpenApiConfig`, asi que el documento publica
+  el valor real. Queda una copia sin resolver: la vigencia del refresh token (24 h) sigue escrita a mano
+  en `TokenResponse` y en la descripcion, porque una anotacion necesita una constante de compilacion.
 
 ## Cambios de contrato ya aplicados
 
