@@ -6,6 +6,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +35,7 @@ public class FamousServiceImpl implements IFamousService {
 
     @Override
     //Podemos usar specification si hay muchos parámetros
+    @Cacheable(cacheNames = "famous", key = "#type + '-' + #category", unless = "#result == null")
     public List<FamousResponse> findAll(FamousTypes type, FamousCategories category) {
 
         if(type != null && category != null){
@@ -47,11 +49,6 @@ public class FamousServiceImpl implements IFamousService {
         }
 
     }
-
-    /*@Override
-    public List<FamousResponse> findByType(FamousTypes type) {
-        return withStatistics(famousRepository.findByTypeOrderByPokedexNumberAsc(type));
-    }*/
 
     @Override
     public FamousResponse findById(UUID famousId) {

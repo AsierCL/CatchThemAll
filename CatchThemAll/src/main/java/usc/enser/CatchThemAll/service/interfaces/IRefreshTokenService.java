@@ -6,8 +6,8 @@ import java.util.UUID;
 
 public interface IRefreshTokenService {
 
-    public RefreshToken create(UUID id);
+    RefreshToken create(UUID id);
 
-    public boolean isExpired(RefreshToken token);
+    boolean isExpired(RefreshToken token);
 
 }

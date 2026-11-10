@@ -7,10 +7,14 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
+import org.jspecify.annotations.NonNull;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +33,7 @@ import usc.enser.CatchThemAll.persistence.repositories.FamousRepository;
 import usc.enser.CatchThemAll.persistence.repositories.UserRepository;
 import usc.enser.CatchThemAll.presentation.dto.CaptureResponse;
 import usc.enser.CatchThemAll.service.interfaces.ICaptureService;
+import usc.enser.CatchThemAll.service.interfaces.IScoreService;
 
 @Service
 public class CaptureServiceImpl implements ICaptureService {
@@ -36,16 +41,18 @@ public class CaptureServiceImpl implements ICaptureService {
     private static final double CAPTURE_SIMILARITY_THRESHOLD = 0.8;
 
     private final CaptureServiceGrpc.CaptureServiceFutureStub captureServiceStub;
+    private final IScoreService scoreService;
     private final CaptureRepository captureRepository;
     private final FamousRepository famousRepository;
     private final UserRepository userRepository;
     private final Executor executor;
 
-    public CaptureServiceImpl(CaptureRepository captureRepository,
+    public CaptureServiceImpl(IScoreService scoreService, CaptureRepository captureRepository,
                               FamousRepository famousRepository,
                               UserRepository userRepository,
                               CaptureServiceGrpc.CaptureServiceFutureStub captureServiceStub,
                               Executor grpcExecutor) {
+        this.scoreService = scoreService;
         this.captureRepository = captureRepository;
         this.famousRepository = famousRepository;
         this.userRepository = userRepository;
@@ -99,11 +106,17 @@ public class CaptureServiceImpl implements ICaptureService {
         Futures.addCallback(guavaFuture, new FutureCallback<>() {
             @Override
             public void onSuccess(CaptureResponse r) {
+                boolean captured = captureRepository
+                        .findByCaptureFamousAndUser(famous, user)
+                        .isPresent();
+                if (!captured) {
+                    scoreService.updateScore(name, r.similarity(), userId);
+                }
                 result.complete(r);
             }
 
             @Override
-            public void onFailure(Throwable t) {
+            public void onFailure(@NonNull Throwable t) {
                 result.completeExceptionally(t);
             }
         }, MoreExecutors.directExecutor());
@@ -142,6 +155,7 @@ public class CaptureServiceImpl implements ICaptureService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "captures", key = "#userId", unless = "#result == null")
     public List<CaptureResponse> findMine(UUID userId) {
         User user = getUserOrThrow(userId);
         return captureRepository.findAllByUserOrderByTimestampDesc(user).stream()
