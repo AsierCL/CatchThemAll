@@ -54,18 +54,25 @@ public class CaptureController {
                     (0 a 1) y el campo `captured` indica si el usuario ya tenia registrada esa captura
                     antes de esta peticion.
 
-                    El cuerpo es `multipart/form-data` con dos partes: `image` (archivo) y `data`
-                    (JSON con el nombre del famoso).
+                    El cuerpo es `multipart/form-data` con dos partes: `image` (archivo) y `name`
+                    (texto con el nombre del famoso).
+
+                    Requiere autenticacion: el `{id}` del path tiene que coincidir con el usuario del
+                    token. Cuando no coincide, la peticion se rechaza en lugar de registrar la captura
+                    a nombre de otro usuario.
 
                     La respuesta es asincronica: el controlador devuelve un `CompletableFuture` que se
                     completa cuando el servicio gRPC de reconocimiento responde.
 
-                    > El `{id}` del path se usa como identificador del usuario dueno de la captura y hoy
-                    > no se contrasta con el token. Ver `TODO.md` en la raiz del repositorio.
-                    """)
+                    > El rechazo por propiedad todavia devuelve `500` en lugar de `403`, y un `name`
+                    > vacio tampoco devuelve `400`. Ver `TODO.md` en la raiz del repositorio.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Identificacion resuelta"),
-            @ApiResponse(responseCode = "400", description = "Falta la imagen, el nombre esta vacio o el cuerpo es invalido",
+            @ApiResponse(responseCode = "400", description = "Falta el parte image o el cuerpo es ilegible",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Falta el token o es invalido",
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
             @ApiResponse(responseCode = "404", description = "El usuario o el famoso no existen, o el servicio no encontro coincidencia",
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
@@ -74,6 +81,8 @@ public class CaptureController {
             @ApiResponse(responseCode = "415", description = "Content-Type no soportado",
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
             @ApiResponse(responseCode = "422", description = "La imagen no se pudo decodificar o no contiene caras",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
+            @ApiResponse(responseCode = "500", description = "El `{id}` no coincide con el usuario del token, o el parte `name` esta vacio",
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
             @ApiResponse(responseCode = "503", description = "El servicio de reconocimiento no esta disponible",
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
@@ -103,20 +112,28 @@ public class CaptureController {
                     muestra de referencia que despues usan las identificaciones.
 
                     El cuerpo es `multipart/form-data` con dos partes: `image` (archivo) y `data`
-                    (JSON con el nombre del famoso).
+                    (texto con el nombre del famoso). El parte de texto se llama `data` aunque no
+                    contenga JSON; en `identify` el equivalente se llama `name`.
+
+                    No exige autenticacion.
 
                     La respuesta es asincronica y devuelve `201 Created` sin cuerpo cuando el servicio
                     gRPC confirma la creacion.
+
+                    > Un `data` vacio termina en `500` en lugar de `400`. Ver `TODO.md` en la raiz del
+                    > repositorio.
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Rostro registrado"),
-            @ApiResponse(responseCode = "400", description = "Falta la imagen, el nombre esta vacio o el cuerpo es invalido",
+            @ApiResponse(responseCode = "400", description = "Falta el parte image o el cuerpo es ilegible",
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
             @ApiResponse(responseCode = "413", description = "La imagen supera el limite de 10MB",
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
             @ApiResponse(responseCode = "415", description = "Content-Type no soportado",
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
             @ApiResponse(responseCode = "422", description = "La imagen no se pudo decodificar",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
+            @ApiResponse(responseCode = "500", description = "El parte `data` esta vacio",
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
             @ApiResponse(responseCode = "503", description = "El servicio de reconocimiento no esta disponible",
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
