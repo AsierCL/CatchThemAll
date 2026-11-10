@@ -30,6 +30,11 @@ refresh-token rotation, `refreshToken` in `TokenResponse`, `PUT /users/me` and `
 `application/json-patch+json`, the flattened multipart of the capture endpoints, the ownership check on
 capture identification, and the ordered `GET /famous` without filters.
 
+S8 — Second entry, PR #11 ("feat:caffeine cache for usual GET"): the branch is rebased onto the new `main`
+and the new observable behaviour is documented too. Server-side caches (`famous` 24 h, `ranking` 1 h,
+`captures` 15 min), `ETag` plus `304 Not Modified` through `ShallowEtagHeaderFilter`, and the score
+awarded on a first capture.
+
 ## Tasks
 
 T1 — Create branch and tracking. Spec: S1. Commit: tracked with the work units.
@@ -66,6 +71,16 @@ L4 (decision): the ownership rejection is documented as `500`, not `403`. `Globa
 `java.nio.file.AccessDeniedException`; the mismatch was confirmed by reading both imports and by a live
 call. `TODO.md` item 3 records the intent-versus-reality gap.
 
+L5 (user request, verbatim): "Acaban de aceptar una PR en main. Traete los cambios y documentalos tambien
+antes de mergear nuestra rama".
+
+L6 (orchestrator): the branch was rebased onto `origin/main` (`51ee101`, PR #11) instead of merging, because
+the branch had not been pushed, so it stays linear and reviewable. The rebase applied without conflicts.
+The new behaviour is documented rather than ignored: a cache is invisible in the schema but very visible to
+a client, so the staleness window of each cached read and the `ETag`/`304` negotiation are stated in the
+`info.description` and in the affected operations, and the score awarded on a first capture is documented
+in `identifyFamous`, `getRanking` and `UserResponse.score`.
+
 ## Evidence
 
 - `./mvnw clean verify` -> BUILD SUCCESS; `docs/openapi.json` regenerated with 16 paths and 21 operations,
@@ -82,3 +97,9 @@ call. `TODO.md` item 3 records the intent-versus-reality gap.
 - Engram mirror: the `mem_save` call was rejected by the runtime contract
   (`expected engram.pi-http-runtime/v1`, HTTP 404), so the `odd/<feature>/tasks` mirror does not exist for
   this feature. Only the file above holds the tracking.
+- Second round, after rebasing onto `51ee101`: `./mvnw clean verify` -> BUILD SUCCESS and
+  `docs/openapi.json` keeps 16 paths and 21 operations, now carrying the cache section in
+  `info.description` and the staleness window in `GET /famous`, `GET /users/ranking` and `GET /captures/me`.
+- Live checks of the HTTP cache contract on port 18080: `GET /famous` answers `200` with
+  `ETag: "0d75..."` and `Cache-Control: no-cache, no-store, max-age=0, must-revalidate`; the same request
+  with `If-None-Match` answers `304`; `GET /users/ranking` also carries an `ETag`.

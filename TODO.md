@@ -109,6 +109,43 @@ en lugar de `400`.
 - `FamousRepository` conserva consultas sin uso (`findAllByOrderByPokedexNumberAsc` ya se usa, pero
   `findByType`, `findByCategory` y compañía quedaron sueltas).
 
+### 12. La cache de `GET /famous` congela las estadisticas 24 horas
+
+`FamousServiceImpl.findAll` esta anotado con `@Cacheable(cacheNames = "famous")` y esa cache expira a
+las 24 horas, sin ningun `@CacheEvict` asociado. El problema es que la respuesta incluye
+`captureCount` y `collectorCount`: despues de la primera lectura, el catalogo muestra conteos
+congelados durante un dia entero, aunque entren capturas nuevas.
+
+### 13. La cache de `GET /captures/me` no se invalida al registrar una captura
+
+`CaptureServiceImpl.findMine` usa `@Cacheable(cacheNames = "captures", key = "#userId")` con 15
+minutos de vigencia. Ninguna escritura la invalida, asi que tras `POST /captures/{id}/identify` el
+historial propio puede seguir sin mostrar la captura recien creada durante ese lapso. La cache de
+`ranking` si se limpia (`ScoreServiceImpl.updateScore` tiene `@CacheEvict`), lo que hace la
+inconsistencia todavia mas visible: el ranking sube y el historial no.
+
+### 14. El puntaje se actualiza con un `@Modifying` sin transaccion
+
+`UserRepository.updateScore` es una consulta `@Modifying` y `ScoreServiceImpl.updateScore` no declara
+`@Transactional`. La llamada ocurre dentro del callback `onSuccess` del futuro de gRPC, o sea fuera
+de cualquier transaccion, asi que la actualizacion probablemente lance
+`TransactionRequiredException`.
+
+Peor: al ejecutarse dentro de `onSuccess`, la excepcion no completa el `CompletableFuture` que espera
+el controlador, con lo que la peticion podria quedarse colgada hasta el timeout en lugar de devolver
+un error.
+
+Sin confirmar: hace falta el servicio gRPC levantado para llegar a ese camino. Es lo primero a mirar
+cuando se arregle el resto.
+
+### 15. Ruido de repositorio
+
+- Hay seis archivos `.pyc` versionados bajo `FacialRecognition/src/capture_service/**/__pycache__/`,
+  incluido el commit `e1376e7` ("meaningless archives") que solo actualiza binarios compilados.
+  Deberian salir del control de versiones y agregarse al `.gitignore`.
+- `application.properties` deja `logging.level.org.springframework.cache=TRACE`: en desarrollo esta
+  bien, pero es un nivel muy verboso para cualquier otro entorno.
+
 ## Resuelto por las contribuciones posteriores a la primera documentación
 
 Se dejan registrados para que no se reabran:
