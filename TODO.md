@@ -98,8 +98,8 @@ Qué falta: decidir si se hashea el token en la base y si el login debe invalida
 ### 10. `RefreshRequest` declara validaciones que nunca se ejecutan
 
 `AuthController.refreshToken` recibe `@RequestBody RefreshRequest request` sin `@Valid`, así que
-`@NotNull` y `@NotBlank` sobre `token` no corren nunca. Un cuerpo con `token` nulo termina en `404`
-en lugar de `400`.
+`@NotNull` y `@NotBlank` sobre `refreshToken` no corren nunca. Un cuerpo con `refreshToken` nulo
+termina en `404` en lugar de `400`.
 
 ### 11. Restos sin uso
 
@@ -146,6 +146,33 @@ cuando se arregle el resto.
 - `application.properties` deja `logging.level.org.springframework.cache=TRACE`: en desarrollo esta
   bien, pero es un nivel muy verboso para cualquier otro entorno.
 
+### 16. La ventana de cache esta escrita en prosa en tres lugares
+
+Las duraciones de cada cache (24 h para `famous`, 1 h para `ranking`, 15 min para `captures`) viven en
+`CacheConfig`, pero tambien estan copiadas en el `info.description` y en la descripcion de cada
+operacion afectada. Si se ajusta un TTL en `CacheConfig`, la documentacion queda mintiendo y nada
+falla para avisarlo.
+
+Que falta: decidir donde vive el dato. O se inyectan los TTL como propiedades (`@Value` desde
+`application.properties`) y la documentacion se arma con esos valores, o el documento deja de repetir
+cifras y dice solo "se sirve desde cache" delegando el numero a `CacheConfig`.
+
+Detectado por la revision de legibilidad (`R2-cache-ttl-prose-duplication`).
+
+## Hallazgos de la revision `review-2c19a267d7e24677` sin texto adjunto
+
+El cierre de esa revision aprobo el candidato pero no adjunto el texto de tres hallazgos, solo id,
+lente, ubicacion y severidad. Quedan anotados para interpretarlos cuando se toque esa zona, no como
+acciones decididas.
+
+- `R3-001` (reliability, WARNING, `docs/openapi.json:1`): apunta al documento generado, no a una linea,
+  asi que es una observacion sobre el artefacto completo.
+- `R3-002` (reliability, WARNING, `CaptureController.java:64-66`): cae en el bloque de `identifyFamous`
+  donde se documenta el puntaje por captura. Sospecha: objeta que el documento prometa puntos cuando la
+  actualizacion del puntaje puede fallar (punto 14).
+- `R3-003` (reliability, SUGGESTION, `OpenApiConfig.java:52-55`): cae en la frase de `ETag` y
+  `Cache-Control: no-store` del `info.description`.
+
 ## Resuelto por las contribuciones posteriores a la primera documentación
 
 Se dejan registrados para que no se reabran:
@@ -161,6 +188,9 @@ Se dejan registrados para que no se reabran:
   nulo.
 - `GET /famous` sin filtros ordena por `pokedexNumber`.
 - `FacialRecognition/src/capture_service/mierda_test.py` fue eliminado.
+- El cuerpo de `POST /auth/refresh` pide `refreshToken` y no `token`: el campo se renombro para que el
+  nombre coincida con el de la respuesta y con el resto de la documentacion. Rompe a cualquier cliente
+  que todavia mande `{"token": "..."}`.
 
 ## Cambios de contrato ya aplicados
 
