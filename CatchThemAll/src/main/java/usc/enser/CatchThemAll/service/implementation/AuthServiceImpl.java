@@ -48,7 +48,7 @@ public class AuthServiceImpl implements IAuthService {
                            RefreshTokenRepository refreshTokenRepository,
                            RefreshTokenService refreshTokenService,
                            JwtEncoder jwtEncoder,
-                           @Value("${security.jwt.expiration-minutes}") long expirationMinutes, PasswordEncoder passwordEncoder) {
+                           @Value("${security.jwt.expiration-minutes:15}") long expirationMinutes, PasswordEncoder passwordEncoder) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;

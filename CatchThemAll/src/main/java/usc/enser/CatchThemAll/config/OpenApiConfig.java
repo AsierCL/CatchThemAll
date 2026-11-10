@@ -36,9 +36,9 @@ public class OpenApiConfig {
     private final Duration rankingTtl;
     private final Duration capturesTtl;
 
-    public OpenApiConfig(@Value("${cache.famous.ttl}") Duration famousTtl,
-                         @Value("${cache.ranking.ttl}") Duration rankingTtl,
-                         @Value("${cache.captures.ttl}") Duration capturesTtl) {
+    public OpenApiConfig(@Value("${cache.famous.ttl:PT24H}") Duration famousTtl,
+                         @Value("${cache.ranking.ttl:PT1H}") Duration rankingTtl,
+                         @Value("${cache.captures.ttl:PT15M}") Duration capturesTtl) {
         this.famousTtl = famousTtl;
         this.rankingTtl = rankingTtl;
         this.capturesTtl = capturesTtl;

@@ -81,6 +81,13 @@ a client, so the staleness window of each cached read and the `ETag`/`304` negot
 `info.description` and in the affected operations, and the score awarded on a first capture is documented
 in `identifyFamous`, `getRanking` and `UserResponse.score`.
 
+L7 (user request, verbatim): "Endurece los @value , dejalo todo listo, y luego mergeamos". Every `@Value`
+that would turn a missing property into a startup failure now carries the default that
+`application.properties` already sets, so the context keeps booting with an overridden configuration
+location: `cache.*.ttl` (the three this branch moved out of code), plus `security.jwt.expiration-minutes`
+and `jwt.refreshExpirationMs`, which already had the problem before this branch. With the properties
+present nothing changes.
+
 ## Evidence
 
 - `./mvnw clean verify` -> BUILD SUCCESS; `docs/openapi.json` regenerated with 16 paths and 21 operations,
@@ -103,3 +110,6 @@ in `identifyFamous`, `getRanking` and `UserResponse.score`.
 - Live checks of the HTTP cache contract on port 18080: `GET /famous` answers `200` with
   `ETag: "0d75..."` and `Cache-Control: no-cache, no-store, max-age=0, must-revalidate`; the same request
   with `If-None-Match` answers `304`; `GET /users/ranking` also carries an `ETag`.
+- Final round: every `@Value` in the tree has a default, so no missing property can stop the context from
+  starting. `./mvnw clean verify` green and the regenerated document unchanged in shape (16 paths, 21
+  operations), with the cache windows printed from the properties.
