@@ -140,49 +140,12 @@ cuando se arregle el resto.
 - `application.properties` deja `logging.level.org.springframework.cache=TRACE`: en desarrollo esta
   bien, pero es un nivel muy verboso para cualquier otro entorno.
 
-## Hallazgos de revision ya resueltos
+### 15. `main` lleva un commit sin revisar y una revision que no cerro
 
-La revision `review-013da219192dc7b5` le puso nombre a los tres hallazgos que la anterior habia
-entregado sin texto (`R3-001`, `R3-002`, `R3-003`), y los tres quedaron cerrados en la rama de
-documentacion:
+El ultimo commit de `main` (`78a07c0`, el endurecimiento de los `@Value`) se mergeo sin pasar por
+revision. La revision anterior de la rama cerro como `escalated` con un hallazgo severo (`R3-001`) cuyo
+texto nunca se expuso: solo se sabe que era de la lente de confiabilidad y que la causalidad quedo
+indeterminada.
 
-- El `ETag` ya no se anuncia para todas las respuestas, solo para las que tienen cuerpo.
-- El puntaje ya no promete un efecto que no esta garantizado; la nota remite a este archivo.
-- Los multiplicadores del puntaje y las ventanas de cache salieron del texto de las operaciones, que
-es donde se desincronizaban.
-
-## Resuelto por las contribuciones posteriores a la primera documentación
-
-Se dejan registrados para que no se reabran:
-
-- `POST /captures/{id}/identify` ahora contrasta el `{id}` con el usuario del token (aunque el
-  rechazo devuelva `500`, ver punto 3).
-- `@NotBlank` sobre el `UUID` de `FriendRequest` fue eliminado: el endpoint de amistades dejó de
-  romper con `500`.
-- `PUT` y `PATCH` se separaron: `PATCH /users/me` recibe un documento JSON Patch real.
-- El multipart de capturas se aplanó a partes simples (aunque el nombre del parte siga desparejo,
-  ver punto 5).
-- `GlobalExceptionHandler.handleResponseStatus` ya no puede construir un `ErrorDTO` con `message`
-  nulo.
-- `GET /famous` sin filtros ordena por `pokedexNumber`.
-- `FacialRecognition/src/capture_service/mierda_test.py` fue eliminado.
-- El cuerpo de `POST /auth/refresh` pide `refreshToken` y no `token`: el campo se renombro para que el
-  nombre coincida con el de la respuesta y con el resto de la documentacion. Rompe a cualquier cliente
-  que todavia mande `{"token": "..."}`.
-- Un cuerpo de refresh invalido ya devuelve `400 validation failed` con `details` en lugar del `404`
-  confuso de antes: `AuthController.refreshToken` usa `@Valid`.
-- Las duraciones de cache son propiedades (`cache.famous.ttl`, `cache.ranking.ttl`,
-  `cache.captures.ttl`) que leen tanto `CacheConfig` como `OpenApiConfig`, asi que el documento publica
-  el valor real. Queda una copia sin resolver: la vigencia del refresh token (24 h) sigue escrita a mano
-  en `TokenResponse` y en la descripcion, porque una anotacion necesita una constante de compilacion.
-
-## Cambios de contrato ya aplicados
-
-### Valores de enum normalizados a minúsculas
-
-`FamousCategories` y `FamousTypes` viajan por la API en minúsculas (`legendary`, `epic`, `rare`,
-`common`, `politic`, `actor`, `writer`, `musician`, `teacher`, `meme`) y se aceptan sin distinguir
-mayúsculas, tanto en el cuerpo JSON como en los query params de `GET /famous`.
-
-La base de datos no cambió: sigue persistiendo el nombre de la constante (`Legendary`), porque la
-normalización se aplica solo en el borde HTTP.
+Que falta: decidir si ese estado se acepta o si se re-revisa el rango `51ee101..78a07c0` cuando se abra
+la rama de errores, que es donde se toca `CacheConfig` de todos modos.

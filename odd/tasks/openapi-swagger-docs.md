@@ -3,6 +3,9 @@
 Branch: `docs/openapi-swagger` (created from `main`). Scope: Spring Boot REST only (no gRPC, no Python).
 Method: springdoc-openapi 3.2.0 + annotations in code, exported to `docs/openapi.json`. Documentation language: Spanish.
 
+The branch `docs/openapi-swagger` was squash-merged into `main` as `780d282` and later deleted, so the
+individual commits listed below no longer exist: every task points at that single commit.
+
 ## Specs
 
 S1 — Branch: "Sigue tu recomendacion" → new branch `docs/openapi-swagger` created from `main`.
@@ -29,15 +32,15 @@ S18 — Deferred fixes: "En la proxima rama quiero hacer los cambios que vamos a
 
 ## Tasks
 
-T1 — Create branch and ODD tracking. Spec: S1. Commit: 283868f (folded into the work units).
-T2 — Add springdoc 3.2.0 + `OpenApiConfig` + properties. Spec: S2, S13, S14. Commit: 78cbcaf.
-T3 — Normalize enums (lowercase JSON, case-insensitive input). Spec: S12. Commit: 5d03966.
+T1 — Create branch and ODD tracking. Spec: S1. Commit: 780d282 (squash).
+T2 — Add springdoc 3.2.0 + `OpenApiConfig` + properties. Spec: S2, S13, S14. Commit: 780d282 (squash).
+T3 — Normalize enums (lowercase JSON, case-insensitive input). Spec: S12. Commit: 780d282 (squash).
 T4 — Flatten capture multipart to `image` + `name`. **Reverted** by S16/S18: the multipart keeps the `data` JSON part and the flattening is now pending in `TODO.md`.
-T5 — Add `GET /captures/me` and `GET /captures/me/{captureId}`. Spec: S8. Commit: 283868f.
-T6 — Annotate the four controllers. Spec: S2, S3, S5, S10, S15. Commit: c264769 (+ 283868f for `CaptureController`).
-T7 — Annotate the DTOs. Spec: S15. Commit: c264769.
-T8 — Export `docs/openapi.json`. Spec: S3, S13. Commit: c264769 (test-based) then T10 (plugin-based).
-T9 — Root `TODO.md` with S5, S6, S7, S9, S10, S11. Spec: S5-S11. Commit: 6fb9e7e.
+T5 — Add `GET /captures/me` and `GET /captures/me/{captureId}`. Spec: S8. Commit: 780d282 (squash).
+T6 — Annotate the four controllers. Spec: S2, S3, S5, S10, S15. Commit: 780d282 (squash).
+T7 — Annotate the DTOs. Spec: S15. Commit: 780d282 (squash).
+T8 — Export `docs/openapi.json`. Spec: S3, S13. Commit: 780d282 (squash).
+T9 — Root `TODO.md` with S5, S6, S7, S9, S10, S11. Spec: S5-S11. Commit: 780d282 (squash).
 T10 — Replace the test-based export with `springdoc-openapi-maven-plugin` and the `openapi` H2 profile. Spec: S16, S17.
 T11 — Remove `src/test` and `spring-boot-starter-test`. Spec: S16.
 
