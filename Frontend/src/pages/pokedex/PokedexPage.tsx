@@ -1,0 +1,181 @@
+import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { famousApi } from '../../api/endpoints'
+import type { FamousCategory, FamousResponse, FamousType } from '../../api/types'
+import { FamousCard } from '../../components/famous/FamousCard'
+import { Button } from '../../components/ui/Button'
+import { EmptyState, ErrorState, LoadingGrid } from '../../components/ui/Feedback'
+import { Input } from '../../components/ui/Field'
+import { Panel, SectionHeading } from '../../components/ui/Panel'
+import { PixelIcon } from '../../components/ui/PixelIcon'
+import { useAuth } from '../../auth/AuthContext'
+import { cx } from '../../lib/cx'
+import { CATEGORY_META, CATEGORY_ORDER, TYPE_META, TYPE_ORDER } from '../../lib/domain'
+import { useAsync } from '../../lib/useAsync'
+
+function normalize(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+}
+
+function FilterChip({
+  active,
+  onClick,
+  children,
+  className,
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cx(
+        'border-2 px-2.5 py-1 font-pixel text-[0.625rem] uppercase tracking-[0.05em] transition-colors',
+        active
+          ? 'border-poke-700 bg-poke-700/15 text-poke-400'
+          : 'border-paper-200 bg-paper-100/60 text-ink-500 hover:border-paper-400 hover:text-ink-800',
+        className,
+      )}
+    >
+      {children}
+    </button>
+  )
+}
+
+export function PokedexPage() {
+  const { status } = useAuth()
+  const [type, setType] = useState<FamousType | null>(null)
+  const [category, setCategory] = useState<FamousCategory | null>(null)
+  const [query, setQuery] = useState('')
+
+  const { data, error, loading, reload } = useAsync<FamousResponse[]>(
+    () => famousApi.list({ type: type ?? undefined, category: category ?? undefined }),
+    [type, category],
+  )
+
+  // El catalogo no tiene busqueda por nombre en la API: se filtra en cliente
+  // sobre el listado ya filtrado por tipo y categoria.
+  const visible = useMemo(() => {
+    const term = normalize(query.trim())
+    const list = data ?? []
+    const filtered = term ? list.filter((famous) => normalize(famous.name).includes(term)) : list
+    return [...filtered].sort((a, b) => a.pokedexNumber - b.pokedexNumber)
+  }, [data, query])
+
+  const activeFilters = (type ? 1 : 0) + (category ? 1 : 0) + (query.trim() ? 1 : 0)
+
+  function clearFilters() {
+    setType(null)
+    setCategory(null)
+    setQuery('')
+  }
+
+  return (
+    <div className="space-y-6">
+      <SectionHeading
+        eyebrow="Catálogo nacional"
+        title="Pokédex de famosos"
+        description="Todos los famosos registrados, con su rareza y cuántos cazadores ya los atraparon. Elegí uno y capturalo con una foto."
+        action={
+          <Link to={status === 'authenticated' ? '/capturar' : '/login'} state={{ from: '/capturar' }}>
+            <Button icon={<PixelIcon name="camera" size={14} />}>Capturar</Button>
+          </Link>
+        }
+      />
+
+      <Panel tone="muted" className="space-y-4">
+        <Input
+          label="Buscar por nombre"
+          placeholder="Ada, Messi, Frida…"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t-2 border-paper-200 pt-3">
+          <p className="font-pixel text-[0.625rem] uppercase tracking-[0.05em] text-ink-400">
+            {loading ? 'Cargando…' : `${visible.length} resultado${visible.length === 1 ? '' : 's'}`}
+          </p>
+          {activeFilters > 0 && (
+            <Button variant="ghost" size="sm" onClick={clearFilters}>
+              Limpiar filtros ({activeFilters})
+            </Button>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <p className="label-pixel">Rareza</p>
+          <div className="flex flex-wrap gap-2">
+            <FilterChip active={category === null} onClick={() => setCategory(null)}>
+              Todas
+            </FilterChip>
+            {CATEGORY_ORDER.map((key) => (
+              <FilterChip
+                key={key}
+                active={category === key}
+                onClick={() => setCategory(category === key ? null : key)}
+                className={category === key ? undefined : CATEGORY_META[key].text}
+              >
+                {CATEGORY_META[key].label}
+              </FilterChip>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <p className="label-pixel">Tipo</p>
+          <div className="flex flex-wrap gap-2">
+            <FilterChip active={type === null} onClick={() => setType(null)}>
+              Todos
+            </FilterChip>
+            {TYPE_ORDER.map((key) => (
+              <FilterChip
+                key={key}
+                active={type === key}
+                onClick={() => setType(type === key ? null : key)}
+                className={type === key ? undefined : TYPE_META[key].text}
+              >
+                {TYPE_META[key].label}
+              </FilterChip>
+            ))}
+          </div>
+        </div>
+      </Panel>
+
+      {loading && !data ? (
+        <LoadingGrid count={8} />
+      ) : error ? (
+        <ErrorState error={error} onRetry={reload} />
+      ) : visible.length === 0 ? (
+        <EmptyState
+          icon="search"
+          title="No hay famosos con esos filtros"
+          description="Probá con otra rareza, otro tipo o borrá la búsqueda."
+          action={
+            <Button variant="secondary" size="sm" onClick={clearFilters}>
+              Limpiar filtros
+            </Button>
+          }
+        />
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {visible.map((famous) => (
+            <FamousCard key={famous.famousId} famous={famous} />
+          ))}
+        </div>
+      )}
+
+      <p className="flex items-start gap-2 text-[0.6875rem] leading-relaxed text-ink-400">
+        <PixelIcon name="clock" size={12} className="mt-0.5" />
+        El catálogo se sirve desde una cache de hasta 24 horas: los conteos de capturas pueden ir un poco
+        atrasados.
+      </p>
+    </div>
+  )
+}

@@ -1,0 +1,208 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Paleta Pokedex: papel calido, tinta y rojo de consola. */
+  --color-paper-0: #ffffff;
+  --color-paper-50: #faf8f3;
+  --color-paper-100: #f2efe7;
+  --color-paper-200: #e8e3d8;
+  --color-paper-300: #d6cfc0;
+  --color-paper-400: #b3ab99;
+
+  --color-ink-900: #1d1a16;
+  --color-ink-800: #34302a;
+  --color-ink-700: #4a453d;
+  --color-ink-600: #635d53;
+  --color-ink-500: #7a7368;
+  --color-ink-400: #948c80;
+
+  /* Rojo Pokedex. No se mezcla con los tintes de estado (rose, amber, sky). */
+  --color-poke-100: #fbe3e1;
+  --color-poke-300: #f08c86;
+  --color-poke-400: #e0564f;
+  --color-poke-500: #d32f2f;
+  --color-poke-600: #b82424;
+  --color-poke-700: #961c1c;
+
+  --color-leaf-500: #3d7a52;
+  --color-leaf-700: #2c5a3c;
+
+  --color-sky-400: #2f7fa8;
+  --color-amber-400: #b98211;
+  --color-rose-400: #b3455a;
+  --color-violet-400: #6f5aa8;
+
+  /* Rarezas de la Pokedex */
+  --color-legendary: #a9761b;
+  --color-epic: #6f5aa8;
+  --color-rare: #2f7fa8;
+  --color-common: #6d7484;
+
+  /* Tipos de famoso */
+  --color-type-politic: #a85f33;
+  --color-type-actor: #a34a7c;
+  --color-type-writer: #2f6f96;
+  --color-type-musician: #6a5aa8;
+  --color-type-teacher: #3d7a52;
+  --color-type-meme: #8a7a1f;
+
+  --font-pixel: 'Silkscreen', 'Courier New', ui-monospace, monospace;
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  --shadow-pixel: 4px 4px 0 0 rgb(29 26 22 / 0.16);
+  --shadow-pixel-sm: 2px 2px 0 0 rgb(29 26 22 / 0.14);
+  --shadow-pixel-lg: 6px 6px 0 0 rgb(29 26 22 / 0.18);
+
+  --animate-pop: pop 160ms steps(2, end);
+  --animate-rise: rise 260ms steps(3, end);
+  --animate-blink: blink 1.2s steps(2, start) infinite;
+  --animate-float: float 3.6s steps(6, end) infinite;
+  --animate-shake: shake 320ms steps(2, end);
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.96);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes rise {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-2px);
+  }
+  75% {
+    transform: translateX(2px);
+  }
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+    scrollbar-color: var(--color-paper-400) var(--color-paper-100);
+  }
+
+  body {
+    min-height: 100dvh;
+    background-color: var(--color-paper-50);
+    background-image:
+      radial-gradient(circle at 50% -10%, rgb(211 47 47 / 0.07) 0%, transparent 55%),
+      radial-gradient(circle at 100% 100%, rgb(214 207 192 / 0.55) 0%, transparent 45%);
+    background-attachment: fixed;
+    color: var(--color-ink-900);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Lineas de scanline apenas perceptibles, sin marear. */
+  body::before {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    pointer-events: none;
+    content: '';
+    background-image: repeating-linear-gradient(
+      to bottom,
+      rgb(29 26 22 / 0.018) 0px,
+      rgb(29 26 22 / 0.018) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  }
+
+  ::selection {
+    background-color: var(--color-poke-500);
+    color: var(--color-paper-0);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-poke-500);
+    outline-offset: 2px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+}
+
+@layer components {
+  /* Marco duro con sombra sin difuminar: el gesto 8-bit de todo el sitio. */
+  .pixel-frame {
+    border: 2px solid var(--color-paper-300);
+    box-shadow: var(--shadow-pixel);
+  }
+
+  .pixel-frame-sm {
+    border: 2px solid var(--color-paper-300);
+    box-shadow: var(--shadow-pixel-sm);
+  }
+
+  .pixel-grid-bg {
+    background-image: radial-gradient(rgb(29 26 22 / 0.12) 1px, transparent 1px);
+    background-size: 16px 16px;
+  }
+
+  .label-pixel {
+    font-family: var(--font-pixel);
+    font-size: 0.625rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ink-500);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
