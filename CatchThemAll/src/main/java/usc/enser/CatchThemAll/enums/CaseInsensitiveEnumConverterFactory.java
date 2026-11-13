@@ -1,9 +1,8 @@
-package usc.enser.CatchThemAll.config;
+package usc.enser.CatchThemAll.enums;
 
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.converter.ConverterFactory;
 import org.springframework.stereotype.Component;
-import usc.enser.CatchThemAll.enums.EnumUtils;
 
 /**
  * Makes every enum-valued query parameter case-insensitive.
@@ -19,7 +18,12 @@ public class CaseInsensitiveEnumConverterFactory implements ConverterFactory<Str
 
     @Override
     public <T extends Enum> Converter<String, T> getConverter(Class<T> targetType) {
-        return source -> convert(targetType, source);
+        System.out.println("Converter solicitado para: " + targetType.getName());
+
+        return source -> {
+            System.out.println("Convirtiendo valor: " + source);
+            return convert(targetType, source);
+        };
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
