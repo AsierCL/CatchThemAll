@@ -283,7 +283,7 @@ export function CapturePage() {
       {result ? (
         <CaptureResult result={result} onAgain={resetFlow} />
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
           <div className="space-y-6">
             {/* Paso 1: famoso */}
             <Panel className="space-y-4">
@@ -339,7 +339,7 @@ export function CapturePage() {
                           <button
                             type="button"
                             onClick={() => selectFamous(famous)}
-                            className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-paper-100"
+                            className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-paper-100 active:bg-paper-100 max-md:min-h-11"
                           >
                             <span className="flex min-w-0 items-center gap-2">
                               <span className="font-pixel text-[0.5625rem] text-ink-400">
@@ -411,7 +411,7 @@ export function CapturePage() {
                     <img
                       src={image.previewUrl}
                       alt="Vista previa de la foto elegida"
-                      className="mx-auto max-h-72 w-auto object-contain"
+                      className="mx-auto max-h-[55svh] w-auto object-contain sm:max-h-72"
                     />
                     <span className="absolute left-3 top-3 border-2 border-paper-300 bg-paper-50/90 px-2 py-0.5 font-pixel text-[0.5625rem] uppercase text-poke-400">
                       lista
@@ -442,7 +442,10 @@ export function CapturePage() {
                   <span className="text-ink-400">
                     <PixelIcon name="camera" size={28} />
                   </span>
-                  <p className="text-sm text-ink-700">Arrastrá una foto acá o elegila desde el dispositivo.</p>
+                  <p className="text-sm text-ink-700">
+                    <span className="hidden sm:inline">Arrastrá una foto acá o elegila desde el dispositivo.</span>
+                    <span className="sm:hidden">Elegí una foto desde tu dispositivo.</span>
+                  </p>
                   <p className="text-[0.6875rem] text-ink-400">JPG, PNG o WEBP · hasta 10 MB · un solo rostro visible</p>
                   <Button variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()}>
                     Elegir archivo
@@ -463,7 +466,7 @@ export function CapturePage() {
                       ref={videoRef}
                       playsInline
                       muted
-                      className="mx-auto max-h-72 w-full object-contain"
+                      className="mx-auto max-h-[55svh] w-full object-contain sm:max-h-72"
                       aria-label="Vista previa de la cámara"
                     />
                     {!cameraReady && !cameraError && (
@@ -479,7 +482,7 @@ export function CapturePage() {
                       {cameraError}
                     </p>
                   ) : (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                       <Button size="sm" onClick={takePhoto} disabled={!cameraReady} icon={<PixelIcon name="camera" size={13} />}>
                         Tomar foto
                       </Button>
@@ -591,17 +594,23 @@ function CaptureResult({ result, onAgain }: { result: CaptureResponse; onAgain: 
 
         <p className="text-[0.6875rem] text-ink-400">Registrada el {formatDateTime(result.timestamp)}</p>
 
-        <div className="flex flex-wrap justify-center gap-2">
-          <Button variant="secondary" size="sm" onClick={onAgain} icon={<PixelIcon name="camera" size={13} />}>
+        <div className="grid gap-2 sm:flex sm:flex-wrap sm:justify-center">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onAgain}
+            icon={<PixelIcon name="camera" size={13} />}
+            className="w-full sm:w-auto"
+          >
             Capturar otro
           </Button>
-          <Link to="/mi-pokedex">
-            <Button size="sm" icon={<PixelIcon name="grid" size={13} />}>
+          <Link to="/mi-pokedex" className="block sm:inline-block">
+            <Button size="sm" icon={<PixelIcon name="grid" size={13} />} className="w-full sm:w-auto">
               Ver mi Pokédex
             </Button>
           </Link>
-          <Link to={`/pokedex/${result.famousId}`}>
-            <Button variant="ghost" size="sm">
+          <Link to={`/pokedex/${result.famousId}`} className="block sm:inline-block">
+            <Button variant="ghost" size="sm" className="w-full sm:w-auto">
               Ver la ficha
             </Button>
           </Link>

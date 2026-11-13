@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { toAppError } from '../../api/errors'
 import { useAuth } from '../../auth/AuthContext'
@@ -23,6 +23,12 @@ export function LoginPage() {
   const [errors, setErrors] = useState<FieldErrors>({})
   const [serverError, setServerError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const nameInputRef = useRef<HTMLInputElement>(null)
+
+  // En escritorio el foco inicial ahorra un clic; en movil abriria el teclado solo.
+  useEffect(() => {
+    if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) nameInputRef.current?.focus()
+  }, [])
 
   const from = (location.state as LocationState | null)?.from ?? '/pokedex'
 
@@ -77,7 +83,10 @@ export function LoginPage() {
         <Input
           label="Nombre de cazador"
           autoComplete="username"
-          autoFocus
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          inputRef={nameInputRef}
           placeholder="ada"
           value={form.name}
           onChange={(event) => update('name', event.target.value)}

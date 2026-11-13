@@ -17,10 +17,10 @@ interface StatCardProps {
 
 function StatCard({ label, value, icon }: StatCardProps) {
   return (
-    <div className="border-2 border-paper-300 bg-paper-0 p-4 shadow-pixel-sm">
+    <div className="border-2 border-paper-300 bg-paper-0 p-3 shadow-pixel-sm sm:p-4">
       <dt className="label-pixel">{label}</dt>
-      <dd className="mt-1.5 flex items-center gap-2 font-pixel text-lg text-ink-900">
-        <PixelIcon name={icon} size={14} className="text-ink-400" />
+      <dd className="mt-1.5 flex items-center gap-1.5 font-pixel text-base text-ink-900 sm:gap-2 sm:text-lg">
+        <PixelIcon name={icon} size={14} className="hidden text-ink-400 sm:block" />
         {formatNumber(value)}
       </dd>
     </div>
@@ -36,7 +36,7 @@ export function ProfilePage() {
 
   return (
     <div className="space-y-8">
-      <section className="flex flex-col gap-6 sm:flex-row sm:items-start">
+      <section className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-start sm:gap-6 sm:text-left">
         <Avatar name={user.name} photoUrl={user.photoUrl} size="lg" />
         <div className="min-w-0 flex-1 space-y-2">
           <p className="label-pixel">Mi perfil</p>
@@ -50,25 +50,30 @@ export function ProfilePage() {
       </section>
 
       <section aria-label="Estadísticas del perfil">
-        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <dl className="grid grid-cols-3 gap-2 sm:gap-3">
           <StatCard label="Puntaje" value={user.score} icon="spark" />
           <StatCard label="Capturas" value={user.captureCount} icon="camera" />
           <StatCard label="Amigos" value={user.friendIds.length} icon="users" />
         </dl>
       </section>
 
-      <section aria-label="Acciones del perfil" className="flex flex-wrap gap-2">
-        <Link to="/mi-pokedex">
-          <Button variant="secondary" icon={<PixelIcon name="ball" size={14} />}>
+      <section aria-label="Acciones del perfil" className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        <Link to="/mi-pokedex" className="block">
+          <Button variant="secondary" icon={<PixelIcon name="ball" size={14} />} className="w-full sm:w-auto">
             Mi Pokédex
           </Button>
         </Link>
-        <Link to="/amigos">
-          <Button variant="secondary" icon={<PixelIcon name="users" size={14} />}>
+        <Link to="/amigos" className="block">
+          <Button variant="secondary" icon={<PixelIcon name="users" size={14} />} className="w-full sm:w-auto">
             Mis amigos
           </Button>
         </Link>
-        <Button variant="primary" icon={<PixelIcon name="user" size={14} />} onClick={() => setEditing(true)}>
+        <Button
+          variant="primary"
+          icon={<PixelIcon name="user" size={14} />}
+          onClick={() => setEditing(true)}
+          className="col-span-2 w-full sm:col-span-1 sm:w-auto"
+        >
           Editar perfil
         </Button>
       </section>
@@ -78,7 +83,12 @@ export function ProfilePage() {
           title="Zona peligrosa"
           description="Eliminar tu cuenta borra tu perfil, tus capturas y tu puntaje para siempre. Esta acción no se puede deshacer."
           action={
-            <Button variant="danger" icon={<PixelIcon name="warning" size={14} />} onClick={() => setDeleteOpen(true)}>
+            <Button
+              variant="danger"
+              icon={<PixelIcon name="warning" size={14} />}
+              onClick={() => setDeleteOpen(true)}
+              className="max-sm:w-full"
+            >
               Eliminar cuenta
             </Button>
           }

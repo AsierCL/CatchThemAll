@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toAppError } from '../../api/errors'
 import { useAuth } from '../../auth/AuthContext'
@@ -24,6 +24,12 @@ export function RegisterPage() {
   const [errors, setErrors] = useState<FieldErrors>({})
   const [serverError, setServerError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const nameInputRef = useRef<HTMLInputElement>(null)
+
+  // Mismo criterio que en login: foco inicial solo con teclado y raton.
+  useEffect(() => {
+    if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) nameInputRef.current?.focus()
+  }, [])
 
   const today = new Date().toISOString().slice(0, 10)
 
@@ -87,7 +93,10 @@ export function RegisterPage() {
           <Input
             label="Nombre de cazador"
             autoComplete="username"
-            autoFocus
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            inputRef={nameInputRef}
             placeholder="ada"
             value={form.name}
             onChange={(event) => update('name', event.target.value)}
@@ -111,7 +120,11 @@ export function RegisterPage() {
         <Input
           label="Email"
           type="email"
+          inputMode="email"
           autoComplete="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           placeholder="ada@example.com"
           value={form.email}
           onChange={(event) => update('email', event.target.value)}

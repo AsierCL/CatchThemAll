@@ -254,7 +254,7 @@ function FriendRow({ friend, onRemove }: FriendRowProps) {
           </p>
         </div>
       </Link>
-      <Button variant="danger" size="sm" onClick={onRemove} icon={<PixelIcon name="close" size={12} />}>
+      <Button variant="danger" size="sm" onClick={onRemove} icon={<PixelIcon name="close" size={12} />} className="shrink-0">
         Quitar
       </Button>
     </li>
@@ -280,7 +280,7 @@ function SearchResultRow({ result, adding, onAdd }: SearchResultRowProps) {
           <p className="text-xs text-ink-500">{formatNumber(result.score)} pts</p>
         </div>
       </Link>
-      <Button size="sm" loading={adding} onClick={onAdd} icon={<PixelIcon name="user" size={12} />}>
+      <Button size="sm" loading={adding} onClick={onAdd} icon={<PixelIcon name="user" size={12} />} className="shrink-0">
         {adding ? 'Agregando' : 'Agregar'}
       </Button>
     </li>

@@ -72,6 +72,21 @@ pip install -r requirements.txt
 python -m capture_service.server
 ```
 
+### Arranque rápido de todo el stack
+
+Desde la raíz del repo:
+
+```bash
+./run.sh
+```
+
+Levanta Postgres, la API y Vite escuchando en `0.0.0.0`, así que también podés abrir la web desde el
+teléfono con `http://<IP-de-la-máquina>:5173`. Los logs quedan en `.run/backend.log` y
+`.run/frontend.log`; `Ctrl+C` detiene API y frontend, y Postgres sigue corriendo. La cámara requiere
+HTTPS o `localhost`, por lo que desde la IP de la LAN solo funciona la subida de archivo.
+
+Puertos configurables con `BACKEND_PORT` y `FRONTEND_PORT`; el host con `BIND_HOST`.
+
 ## Pendientes conocidos
 
 Ver [`TODO.md`](TODO.md). La documentación describe el comportamiento actual, incluidas las

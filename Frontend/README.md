@@ -117,6 +117,23 @@ Rutas:
 - Iconografía propia: `PixelIcon` dibuja sprites de 16×16 con rectángulos y `shape-rendering: crispEdges`,
   sin dependencias de iconos.
 
+## Móvil
+
+La versión de escritorio no cambia: las adaptaciones viven detrás de `sm:` / `md:` o de reglas de plataforma.
+
+- Barra de navegación inferior fija (`MobileNav`) con los cinco accesos principales y botón de cuenta en el
+  header. Se oculta en login y registro para no tapar el formulario con el teclado abierto.
+- Objetivos táctiles de al menos 44 px en botones, inputs, chips y celdas de navegación; `touch-action:
+  manipulation`, sin flash gris al tocar y sin selección de texto en controles.
+- Inputs a 16 px en móvil para que iOS no haga zoom al enfocar; el foco automático del login solo se
+  aplica con teclado y ratón, nunca en táctil.
+- Modales como hoja inferior con altura máxima, scroll interno y footer fijo, respetando `safe-area-inset`.
+- Pódium y ranking con una fila compacta, filtros de la Pokédex como carrusel horizontal y estadísticas en
+  tres columnas apretadas en vez de tres bloques apilados.
+- `viewport-fit=cover`, `100dvh`, `env(safe-area-inset-*)` y `theme-color` para que la app llegue hasta el
+  notch sin quedar tapada por la barra de gestos.
+- El fondo con `background-attachment: fixed` se desactiva en pantallas táctiles, donde provoca repintados.
+
 ## Accesibilidad
 
 - HTML semántico, un solo `h1` por pantalla, `aria-label` en controles sin texto visible y `role="alert"` /

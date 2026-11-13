@@ -1,4 +1,11 @@
-import { useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
+import {
+  useId,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type Ref,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
+} from 'react'
 import { cx } from '../../lib/cx'
 
 interface FieldShellProps {
@@ -32,8 +39,8 @@ function FieldShell({ label, htmlFor, hint, error, required, children, className
 }
 
 const CONTROL =
-  'w-full border-2 border-paper-300 bg-paper-0 px-3 py-2.5 text-sm text-ink-900 ' +
-  'placeholder:text-ink-400 transition-colors duration-100 ' +
+  'w-full border-2 border-paper-300 bg-paper-0 px-3 py-2.5 text-base text-ink-900 md:text-sm ' +
+  'max-md:min-h-11 placeholder:text-ink-400 transition-colors duration-100 ' +
   'hover:border-paper-400 focus:border-poke-500 focus:outline-none ' +
   'disabled:cursor-not-allowed disabled:border-paper-200 disabled:bg-paper-100 disabled:text-ink-400'
 
@@ -42,9 +49,10 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   hint?: string
   error?: string
   containerClassName?: string
+  inputRef?: Ref<HTMLInputElement>
 }
 
-export function Input({ label, hint, error, containerClassName, className, id, required, ...rest }: InputProps) {
+export function Input({ label, hint, error, containerClassName, className, id, required, inputRef, ...rest }: InputProps) {
   const generatedId = useId()
   const inputId = id ?? generatedId
 
@@ -58,6 +66,7 @@ export function Input({ label, hint, error, containerClassName, className, id, r
       className={containerClassName}
     >
       <input
+        ref={inputRef}
         id={inputId}
         aria-invalid={error ? true : undefined}
         className={cx(CONTROL, error && 'border-rose-400/70', className)}

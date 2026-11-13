@@ -114,10 +114,25 @@
   }
 }
 
+/* Oculta la barra de scroll en carruseles horizontales (filtros, chips). */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @layer base {
   html {
     color-scheme: light;
     scrollbar-color: var(--color-paper-400) var(--color-paper-100);
+    /* Sin flash gris al tocar, sin delay de doble tap y sin zoom de texto en iOS. */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    overscroll-behavior-y: none;
+    scroll-padding-top: 5.5rem;
   }
 
   body {
@@ -131,6 +146,29 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+  }
+
+  /* En pantallas táctiles el fondo fijo se repinta en cada scroll: caro y saltarín. */
+  @media (pointer: coarse) {
+    body {
+      background-attachment: scroll;
+    }
+  }
+
+  /* Los controles responden al instante y no se seleccionan con un toque largo. */
+  button,
+  a,
+  [role='button'],
+  [role='tab'] {
+    touch-action: manipulation;
+  }
+
+  button,
+  [role='button'],
+  [role='tab'] {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
   }
 
   /* Lineas de scanline apenas perceptibles, sin marear. */
