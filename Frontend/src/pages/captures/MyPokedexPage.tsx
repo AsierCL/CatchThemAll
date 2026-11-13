@@ -18,10 +18,10 @@ interface StatCardProps {
 
 function StatCard({ label, value, icon }: StatCardProps) {
   return (
-    <div className="border-2 border-paper-300 bg-paper-0 p-4 shadow-pixel-sm">
+    <div className="border-2 border-paper-300 bg-paper-0 p-3 shadow-pixel-sm sm:p-4">
       <dt className="label-pixel">{label}</dt>
-      <dd className="mt-1.5 flex items-center gap-2 font-pixel text-lg text-ink-900">
-        <PixelIcon name={icon} size={14} className="text-ink-400" />
+      <dd className="mt-1.5 flex items-center gap-1.5 font-pixel text-base text-ink-900 sm:gap-2 sm:text-lg">
+        <PixelIcon name={icon} size={14} className="hidden text-ink-400 sm:block" />
         {value}
       </dd>
     </div>
@@ -98,7 +98,7 @@ export function MyPokedexPage() {
       ) : (
         <>
           <section aria-label="Estadísticas del historial">
-            <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <dl className="grid grid-cols-3 gap-2 sm:gap-3">
               <StatCard label="Total de capturas" value={formatNumber(captures.length)} icon="camera" />
               <StatCard label="Famosos distintos" value={formatNumber(distinctCount)} icon="ball" />
               <StatCard label="Mejor similitud" value={formatSimilarity(bestSimilarity)} icon="spark" />

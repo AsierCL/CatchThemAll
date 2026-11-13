@@ -14,8 +14,8 @@ interface AuthLayoutProps {
  */
 export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProps) {
   return (
-    <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-      <section className="border-2 border-paper-300 bg-paper-0 p-6 shadow-pixel sm:p-8">
+    <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <section className="border-2 border-paper-300 bg-paper-0 p-5 shadow-pixel sm:p-8">
         <div className="mb-6 space-y-2">
           <p className="label-pixel">Acceso de cazadores</p>
           <h1 className="font-pixel text-lg text-ink-900 sm:text-xl">{title}</h1>

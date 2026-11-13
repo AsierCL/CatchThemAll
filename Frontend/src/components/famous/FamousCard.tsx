@@ -24,7 +24,7 @@ export function FamousCard({ famous, className }: FamousCardProps) {
       className={cx(
         'group relative flex flex-col gap-3 border-2 bg-paper-0 p-4 transition-[transform,box-shadow,border-color] duration-150',
         category.border,
-        'shadow-pixel-sm hover:-translate-y-0.5 hover:shadow-pixel',
+        'shadow-pixel-sm hover:-translate-y-0.5 hover:shadow-pixel active:translate-y-0 active:shadow-none',
         className,
       )}
     >

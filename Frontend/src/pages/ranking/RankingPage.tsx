@@ -21,7 +21,7 @@ const PODIUM_STYLES: Record<PodiumAccent, { frame: string; number: string; backg
 
 const PODIUM_ORDER: PodiumAccent[] = ['legendary', 'rare', 'common']
 
-const ROW_GRID = 'grid-cols-[3rem_minmax(0,1fr)_5.5rem_5rem] sm:grid-cols-[3.5rem_minmax(0,1fr)_7rem_6rem]'
+const ROW_GRID = 'grid-cols-[2.25rem_minmax(0,1fr)_auto] sm:grid-cols-[3.5rem_minmax(0,1fr)_7rem_6rem]'
 
 export function RankingPage() {
   const { user } = useAuth()
@@ -63,7 +63,7 @@ export function RankingPage() {
         </div>
       ) : (
         <>
-          <ol className="grid grid-cols-1 gap-4 sm:grid-cols-3" aria-label="Podio">
+          <ol className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4" aria-label="Podio">
             {entries.slice(0, 3).map((entry, index) => (
               <PodiumCard
                 key={entry.userId}
@@ -79,14 +79,14 @@ export function RankingPage() {
             <Panel padded={false}>
               <div
                 className={cx(
-                  'grid items-center gap-2 border-b-2 border-l-2 border-paper-300 border-l-transparent px-4 py-2',
+                  'grid items-center gap-2 border-b-2 border-l-2 border-paper-300 border-l-transparent px-3 py-2 sm:px-4',
                   ROW_GRID,
                 )}
               >
                 <span className="label-pixel">#</span>
                 <span className="label-pixel">Cazador</span>
                 <span className="label-pixel text-right">Puntaje</span>
-                <span className="label-pixel text-right">Capturas</span>
+                <span className="label-pixel hidden text-right sm:block">Capturas</span>
               </div>
               <ol aria-label="Resto del ranking">
                 {entries.slice(3).map((entry, index) => (
@@ -138,28 +138,35 @@ function PodiumCard({ position, accent, entry, isCurrent }: PodiumCardProps) {
       <Link
         to={`/usuarios/${entry.userId}`}
         className={cx(
-          'flex h-full flex-col items-center gap-3 border-2 bg-paper-0 p-5 text-center shadow-pixel',
-          'transition-[transform,box-shadow] duration-100 hover:-translate-y-px',
+          'flex h-full items-center gap-3 border-2 bg-paper-0 p-3 text-left shadow-pixel sm:flex-col sm:gap-3 sm:p-5 sm:text-center',
+          'transition-[transform,box-shadow] duration-100 hover:-translate-y-px active:translate-y-0 active:shadow-none sm:active:shadow-pixel',
           isCurrent ? 'border-poke-500' : style.frame,
         )}
       >
         <span
           className={cx(
-            'border-2 px-2.5 py-1 font-pixel text-sm',
+            'shrink-0 border-2 px-2 py-1 font-pixel text-xs sm:px-2.5 sm:text-sm',
             isCurrent ? 'border-poke-500/70 bg-poke-700/15 text-poke-400' : cx(style.background, style.frame, style.number),
           )}
         >
           {position}°
         </span>
 
-        <Avatar name={entry.name} photoUrl={entry.photoUrl} size="lg" />
+        <Avatar name={entry.name} photoUrl={entry.photoUrl} size="sm" className="sm:hidden" />
+        <Avatar name={entry.name} photoUrl={entry.photoUrl} size="lg" className="hidden sm:inline-flex" />
 
-        <div className="space-y-1">
-          <p className="font-pixel text-sm leading-tight text-ink-900">{entry.name}</p>
+        <div className="min-w-0 flex-1 space-y-1 sm:flex-none">
+          <p className="line-clamp-2 font-pixel text-sm leading-tight text-ink-900 sm:line-clamp-none">{entry.name}</p>
           {isCurrent && <Badge tone="brand">vos</Badge>}
+          <p className="font-pixel text-[0.5625rem] leading-tight text-amber-400 sm:hidden">
+            {formatNumber(entry.score)} pts
+          </p>
+          <p className="font-pixel text-[0.5rem] uppercase leading-tight tracking-[0.03em] text-ink-400 sm:hidden">
+            {formatNumber(entry.captureCount)} capturas
+          </p>
         </div>
 
-        <dl className="grid w-full grid-cols-2 gap-2">
+        <dl className="hidden w-full grid-cols-2 gap-2 sm:grid">
           <div className="border-2 border-paper-300 bg-paper-100/60 p-2">
             <dt className="label-pixel">Puntaje</dt>
             <dd className="mt-1 font-pixel text-sm text-amber-400">{formatNumber(entry.score)}</dd>
@@ -191,7 +198,7 @@ function RankingRow({ position, entry, isCurrent }: RankingRowProps) {
       <Link
         to={`/usuarios/${entry.userId}`}
         className={cx(
-          'grid items-center gap-2 px-4 py-3 transition-colors hover:bg-paper-100',
+          'grid items-center gap-2 px-3 py-2.5 transition-colors hover:bg-paper-100 active:bg-paper-100 sm:px-4 sm:py-3',
           ROW_GRID,
           isCurrent && 'bg-poke-700/10',
         )}
@@ -200,14 +207,21 @@ function RankingRow({ position, entry, isCurrent }: RankingRowProps) {
 
         <span className="flex min-w-0 items-center gap-2.5">
           <Avatar name={entry.name} photoUrl={entry.photoUrl} size="sm" />
-          <span className="flex min-w-0 items-center gap-2">
-            <span className="truncate font-pixel text-xs text-ink-900">{entry.name}</span>
-            {isCurrent && <Badge tone="brand">vos</Badge>}
+          <span className="min-w-0">
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="line-clamp-2 font-pixel text-xs leading-tight text-ink-900 sm:line-clamp-1">{entry.name}</span>
+              {isCurrent && <Badge tone="brand">vos</Badge>}
+            </span>
+            <span className="mt-1 block font-pixel text-[0.5625rem] uppercase tracking-[0.04em] text-ink-400 sm:hidden">
+              {formatNumber(entry.captureCount)} capturas
+            </span>
           </span>
         </span>
 
         <span className="text-right font-pixel text-xs text-amber-400">{formatNumber(entry.score)}</span>
-        <span className="text-right font-pixel text-xs text-ink-700">{formatNumber(entry.captureCount)}</span>
+        <span className="hidden text-right font-pixel text-xs text-ink-700 sm:block">
+          {formatNumber(entry.captureCount)}
+        </span>
       </Link>
     </li>
   )

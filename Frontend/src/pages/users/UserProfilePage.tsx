@@ -79,16 +79,16 @@ export function UserProfilePage() {
               )}
             </div>
 
-            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <div className="border-2 border-paper-300 bg-paper-100/60 p-3">
+            <dl className="grid grid-cols-3 gap-2 sm:gap-3">
+              <div className="border-2 border-paper-300 bg-paper-100/60 p-2.5 sm:p-3">
                 <dt className="label-pixel">Puntaje</dt>
                 <dd className="mt-1 font-pixel text-sm text-amber-400">{formatNumber(profile.score)}</dd>
               </div>
-              <div className="border-2 border-paper-300 bg-paper-100/60 p-3">
+              <div className="border-2 border-paper-300 bg-paper-100/60 p-2.5 sm:p-3">
                 <dt className="label-pixel">Capturas</dt>
                 <dd className="mt-1 font-pixel text-sm text-ink-900">{formatNumber(profile.captureCount)}</dd>
               </div>
-              <div className="border-2 border-paper-300 bg-paper-100/60 p-3">
+              <div className="border-2 border-paper-300 bg-paper-100/60 p-2.5 sm:p-3">
                 <dt className="label-pixel">Amigos</dt>
                 <dd className="mt-1 font-pixel text-sm text-ink-900">{formatNumber(profile.friendIds.length)}</dd>
               </div>
@@ -96,13 +96,19 @@ export function UserProfilePage() {
 
             <div className="flex flex-wrap items-center gap-2">
               {isOwnProfile ? (
-                <Link to="/perfil">
-                  <Button variant="secondary" size="sm" icon={<PixelIcon name="user" size={12} />}>
+                <Link to="/perfil" className="block max-sm:w-full">
+                  <Button variant="secondary" size="sm" icon={<PixelIcon name="user" size={12} />} className="max-sm:w-full">
                     Ver mi perfil
                   </Button>
                 </Link>
               ) : me && !isFriend ? (
-                <Button size="sm" loading={adding} onClick={handleAddFriend} icon={<PixelIcon name="user" size={12} />}>
+                <Button
+                  size="sm"
+                  loading={adding}
+                  onClick={handleAddFriend}
+                  icon={<PixelIcon name="user" size={12} />}
+                  className="max-sm:w-full"
+                >
                   {adding ? 'Agregando' : 'Agregar amigo'}
                 </Button>
               ) : null}

@@ -39,11 +39,21 @@ export function Navbar() {
   // Cerrar el panel movil al navegar.
   useEffect(() => setMenuOpen(false), [location.pathname])
 
+  // Escape cierra el panel, igual que en los dialogos.
+  useEffect(() => {
+    if (!menuOpen) return
+    function handleKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') setMenuOpen(false)
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [menuOpen])
+
   return (
-    <header className="sticky top-0 z-40 border-b-2 border-paper-300 bg-paper-50/92 backdrop-blur-[2px]">
+    <header className="sticky top-0 z-40 border-b-2 border-paper-300 bg-paper-50/92 pt-[env(safe-area-inset-top,0px)] backdrop-blur-[2px]">
       <div className="h-[3px] bg-poke-500" aria-hidden="true" />
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
-        <div className="flex items-center gap-6">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:gap-4">
+        <div className="flex min-w-0 items-center gap-6">
           <Wordmark />
           <nav aria-label="Navegación principal" className="hidden items-center gap-1 md:flex">
             {NAV_ITEMS.map((item) => (
@@ -65,7 +75,7 @@ export function Navbar() {
           </nav>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           {status === 'authenticated' && user ? (
             <>
               <span
@@ -79,24 +89,27 @@ export function Navbar() {
 
               <Link
                 to="/perfil"
-                className="hidden items-center gap-2 border-2 border-transparent px-1 py-1 transition-colors hover:border-paper-300 sm:flex"
+                className="flex size-11 items-center justify-center border-2 border-transparent transition-colors hover:border-paper-300 sm:size-auto sm:justify-start sm:gap-2 sm:px-1 sm:py-1"
                 title="Mi perfil"
               >
                 <Avatar name={user.name} photoUrl={user.photoUrl} size="xs" />
-                <span className="max-w-24 truncate font-pixel text-[0.625rem] uppercase text-ink-700">{user.name}</span>
+                <span className="hidden max-w-24 truncate font-pixel text-[0.625rem] uppercase text-ink-700 sm:inline">
+                  {user.name}
+                </span>
               </Link>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  logout()
-                  navigate('/')
-                }}
-                className="hidden md:inline-flex"
-              >
-                Salir
-              </Button>
+              <div className="hidden md:block">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    logout()
+                    navigate('/')
+                  }}
+                >
+                  Salir
+                </Button>
+              </div>
             </>
           ) : (
             <div className="hidden items-center gap-2 md:flex">
@@ -113,7 +126,7 @@ export function Navbar() {
 
           <button
             type="button"
-            className="border-2 border-paper-300 p-2 text-ink-700 transition-colors hover:border-paper-400 hover:text-ink-900 md:hidden"
+            className="flex size-11 items-center justify-center border-2 border-paper-300 text-ink-700 transition-colors hover:border-paper-400 hover:text-ink-900 md:hidden"
             aria-expanded={menuOpen}
             aria-controls="menu-movil"
             aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
@@ -125,59 +138,51 @@ export function Navbar() {
       </div>
 
       {menuOpen && (
-        <div id="menu-movil" className="border-t-2 border-paper-300 bg-paper-100 md:hidden">
-          <nav aria-label="Navegación principal móvil" className="mx-auto grid max-w-6xl gap-1 p-4">
-            {NAV_ITEMS.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  cx(
-                    'border-2 px-3 py-2 font-pixel text-[0.6875rem] uppercase tracking-[0.05em]',
-                    isActive
-                      ? 'border-poke-700 bg-poke-100 text-poke-700'
-                      : 'border-paper-200 text-ink-600 hover:border-paper-400 hover:text-ink-900',
-                  )
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-
-            <div className="mt-2 grid gap-1 border-t-2 border-paper-200 pt-3">
-              {status === 'authenticated' && user ? (
-                <>
-                  <Link to="/perfil" className="border-2 border-paper-200 px-3 py-2 font-pixel text-[0.6875rem] uppercase text-ink-700">
-                    Mi perfil · {formatNumber(user.score)} pts
-                  </Link>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    fullWidth
-                    onClick={() => {
-                      logout()
-                      navigate('/')
-                    }}
-                  >
-                    Cerrar sesión
+        <div id="menu-movil" className="animate-rise border-t-2 border-paper-300 bg-paper-100 md:hidden">
+          <div className="mx-auto max-w-6xl p-4">
+            {status === 'authenticated' && user ? (
+              <div className="space-y-2">
+                <Link
+                  to="/perfil"
+                  className="flex items-center gap-3 border-2 border-paper-200 bg-paper-0 p-3 transition-colors active:bg-paper-100"
+                >
+                  <Avatar name={user.name} photoUrl={user.photoUrl} size="sm" />
+                  <div className="min-w-0">
+                    <p className="truncate font-pixel text-xs uppercase tracking-[0.04em] text-ink-900">
+                      {user.name}
+                    </p>
+                    <p className="mt-1 text-[0.6875rem] text-ink-500">
+                      {formatNumber(user.score)} pts · {formatNumber(user.captureCount)} capturas
+                    </p>
+                  </div>
+                </Link>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  fullWidth
+                  onClick={() => {
+                    logout()
+                    navigate('/')
+                  }}
+                >
+                  Cerrar sesión
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-2">
+                <Link to="/login" className="block">
+                  <Button variant="secondary" size="sm" fullWidth>
+                    Entrar
                   </Button>
-                </>
-              ) : (
-                <>
-                  <Link to="/login">
-                    <Button variant="secondary" size="sm" fullWidth>
-                      Entrar
-                    </Button>
-                  </Link>
-                  <Link to="/registro">
-                    <Button size="sm" fullWidth>
-                      Crear cuenta
-                    </Button>
-                  </Link>
-                </>
-              )}
-            </div>
-          </nav>
+                </Link>
+                <Link to="/registro" className="block">
+                  <Button size="sm" fullWidth>
+                    Crear cuenta
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </header>

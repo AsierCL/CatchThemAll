@@ -11,14 +11,24 @@ import { CATEGORY_META, formatPokedexNumber, TYPE_META } from '../../lib/domain'
 import { formatNumber } from '../../lib/format'
 import { useAsync } from '../../lib/useAsync'
 
-function Stat({ label, value, icon }: { label: string; value: string; icon: 'camera' | 'users' | 'spark' }) {
+function Stat({
+  label,
+  value,
+  icon,
+  valueClassName,
+}: {
+  label: string
+  value: string
+  icon: 'camera' | 'users' | 'spark'
+  valueClassName?: string
+}) {
   return (
-    <div className="border-2 border-paper-200 bg-paper-100/60 p-3">
-      <p className="label-pixel flex items-center gap-1.5">
-        <PixelIcon name={icon} size={11} />
-        {label}
+    <div className="min-w-0 border-2 border-paper-200 bg-paper-100/60 p-2.5 sm:p-3">
+      <p className="label-pixel flex min-w-0 items-center gap-1.5">
+        <PixelIcon name={icon} size={11} className="hidden sm:block" />
+        <span className="truncate">{label}</span>
       </p>
-      <p className="mt-1 font-pixel text-base text-ink-900">{value}</p>
+      <p className={cx('mt-1 truncate font-pixel text-sm text-ink-900 sm:text-base', valueClassName)}>{value}</p>
     </div>
   )
 }
@@ -45,13 +55,13 @@ export function FamousDetailPage() {
     <div className="space-y-6">
       <Link
         to="/pokedex"
-        className="inline-flex items-center gap-1.5 font-pixel text-[0.625rem] uppercase tracking-[0.06em] text-ink-500 transition-colors hover:text-ink-900"
+        className="inline-flex items-center gap-1.5 font-pixel text-[0.625rem] uppercase tracking-[0.06em] text-ink-500 transition-colors hover:text-ink-900 max-sm:min-h-11"
       >
         <PixelIcon name="arrowLeft" size={12} />
         Volver al catálogo
       </Link>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <Panel elevation="raised" className={cx('relative overflow-hidden', category.border)}>
           <div className="pixel-grid-bg pointer-events-none absolute inset-0 opacity-40" aria-hidden="true" />
 
@@ -102,10 +112,10 @@ export function FamousDetailPage() {
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               <Stat label="Capturas" value={formatNumber(data.captureCount)} icon="camera" />
               <Stat label="Cazadores" value={formatNumber(data.collectorCount)} icon="users" />
-              <Stat label="Rareza" value={category.label} icon="spark" />
+              <Stat label="Rareza" value={category.label} icon="spark" valueClassName="max-sm:text-[0.625rem] max-sm:leading-6" />
             </div>
           </div>
         </Panel>
