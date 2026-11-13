@@ -72,6 +72,8 @@ public class AuthServiceImpl implements IAuthService {
         User user = userRepository.findByName(authentication.getName())
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "invalid credentials"));
 
+        refreshTokenRepository.deleteByUser_UserId(user.getUserId());
+
         RefreshToken refreshToken = refreshTokenService.create(user.getUserId());
         return generateToken(user, refreshToken.getToken());
     }

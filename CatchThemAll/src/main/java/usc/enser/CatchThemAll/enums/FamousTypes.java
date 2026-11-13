@@ -34,13 +34,6 @@ public enum FamousTypes {
 
     @JsonCreator
     public static FamousTypes fromValue(String raw) {
-        if (raw == null) {
-            return null;
-        }
-        String candidate = raw.trim();
-        return Arrays.stream(values())
-                .filter(type -> type.name().equalsIgnoreCase(candidate))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("unknown famous type: " + raw));
+        return EnumUtils.fromValue(FamousTypes.class,raw);
     }
 }

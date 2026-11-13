@@ -148,7 +148,7 @@ public class CaptureController {
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public CompletableFuture<ResponseEntity<Void>> create(
             @RequestPart("image") MultipartFile image,
-            @RequestPart("data") @NotBlank @NotNull String name) throws IOException {
+            @RequestPart("name") @NotBlank @NotNull String name) throws IOException {
 
         return captureService.create(image, name)
                 .thenApply(response ->
