@@ -106,13 +106,14 @@ public class CaptureServiceImpl implements ICaptureService {
         Futures.addCallback(guavaFuture, new FutureCallback<>() {
             @Override
             public void onSuccess(CaptureResponse r) {
-                boolean captured = captureRepository
-                        .findByCaptureFamousAndUser(famous, user)
-                        .isPresent();
-                if (!captured) {
-                    scoreService.updateScore(name, r.similarity(), userId);
+                try {
+                    if (!r.captured()) {
+                        scoreService.updateScore(name, r.similarity(), userId);
+                    }
+                    result.complete(r);
+                }catch (Exception e){
+                    result.completeExceptionally(e);
                 }
-                result.complete(r);
             }
 
             @Override

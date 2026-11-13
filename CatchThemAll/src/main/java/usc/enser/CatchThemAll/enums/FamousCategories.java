@@ -26,13 +26,6 @@ public enum FamousCategories {
 
     @JsonCreator
     public static FamousCategories fromValue(String raw) {
-        if (raw == null) {
-            return null;
-        }
-        String candidate = raw.trim();
-        return Arrays.stream(values())
-                .filter(category -> category.name().equalsIgnoreCase(candidate))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("unknown famous category: " + raw));
+        return EnumUtils.fromValue(FamousCategories.class,raw);
     }
 }

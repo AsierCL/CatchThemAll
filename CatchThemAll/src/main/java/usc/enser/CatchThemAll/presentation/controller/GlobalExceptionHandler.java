@@ -18,6 +18,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
@@ -37,7 +38,10 @@ public class GlobalExceptionHandler {
         return build(exception.getStatus(), exception.getMessage(), request, List.of());
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ExceptionHandler({
+            MethodArgumentNotValidException.class,
+            HandlerMethodValidationException.class
+    })
     public ResponseEntity<ErrorDTO> handleValidation(MethodArgumentNotValidException exception, HttpServletRequest request) {
         List<String> details = exception.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
@@ -84,7 +88,10 @@ public class GlobalExceptionHandler {
         return build(status == null ? HttpStatus.INTERNAL_SERVER_ERROR : status, message, request, List.of());
     }
 
-    @ExceptionHandler(AccessDeniedException.class)
+    @ExceptionHandler({
+            AccessDeniedException.class,
+            java.nio.file.AccessDeniedException.class
+    })
     public ResponseEntity<ErrorDTO> handleAccessDenied(AccessDeniedException exception, HttpServletRequest request) {
         return build(HttpStatus.FORBIDDEN, "access denied", request, List.of());
     }

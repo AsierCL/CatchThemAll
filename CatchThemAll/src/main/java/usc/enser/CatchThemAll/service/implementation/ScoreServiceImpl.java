@@ -2,6 +2,7 @@ package usc.enser.CatchThemAll.service.implementation;
 
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import usc.enser.CatchThemAll.persistence.repositories.FamousRepository;
 import usc.enser.CatchThemAll.persistence.repositories.UserRepository;
 import usc.enser.CatchThemAll.service.interfaces.IScoreService;
@@ -20,7 +21,8 @@ public class ScoreServiceImpl implements IScoreService {
         this.userRepository = userRepository;
     }
 
-    @CacheEvict(cacheNames = "ranking", allEntries = true)
+    @Transactional
+    @CacheEvict(cacheNames = {"ranking", "famous", "captures"}, allEntries = true)
     public void updateScore(String name, double similarity, UUID id) {
 
         int points = famousRepository.findByName(name).map(famous ->
@@ -33,4 +35,5 @@ public class ScoreServiceImpl implements IScoreService {
 
         userRepository.updateScore(id, points);
     }
+
 }
