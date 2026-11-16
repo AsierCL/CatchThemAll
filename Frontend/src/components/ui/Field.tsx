@@ -1,5 +1,6 @@
 import {
   useId,
+  useState,
   type InputHTMLAttributes,
   type ReactNode,
   type Ref,
@@ -12,13 +13,25 @@ interface FieldShellProps {
   label: string
   htmlFor: string
   hint?: string
+  hintId?: string
   error?: string
+  errorId?: string
   required?: boolean
   children: ReactNode
   className?: string
 }
 
-function FieldShell({ label, htmlFor, hint, error, required, children, className }: FieldShellProps) {
+function FieldShell({
+  label,
+  htmlFor,
+  hint,
+  hintId,
+  error,
+  errorId,
+  required,
+  children,
+  className,
+}: FieldShellProps) {
   return (
     <div className={cx('space-y-1.5', className)}>
       <label htmlFor={htmlFor} className="flex items-baseline justify-between gap-2">
@@ -26,11 +39,15 @@ function FieldShell({ label, htmlFor, hint, error, required, children, className
           {label}
           {required && <span className="ml-1 text-rose-400">*</span>}
         </span>
-        {hint && !error && <span className="text-[0.6875rem] text-ink-400">{hint}</span>}
+        {hint && !error && (
+          <span id={hintId} className="text-[0.6875rem] text-ink-400">
+            {hint}
+          </span>
+        )}
       </label>
       {children}
       {error && (
-        <p role="alert" className="text-xs text-rose-400">
+        <p id={errorId} className="text-xs text-rose-400">
           {error}
         </p>
       )}
@@ -44,35 +61,87 @@ const CONTROL =
   'hover:border-paper-400 focus:border-poke-500 focus:outline-none ' +
   'disabled:cursor-not-allowed disabled:border-paper-200 disabled:bg-paper-100 disabled:text-ink-400'
 
+function describedBy(...ids: Array<string | undefined>): string | undefined {
+  const value = ids.filter(Boolean).join(' ')
+  return value || undefined
+}
+
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string
   hint?: string
   error?: string
   containerClassName?: string
   inputRef?: Ref<HTMLInputElement>
+  trailing?: ReactNode
 }
 
-export function Input({ label, hint, error, containerClassName, className, id, required, inputRef, ...rest }: InputProps) {
+export function Input({
+  label,
+  hint,
+  error,
+  containerClassName,
+  className,
+  id,
+  required,
+  inputRef,
+  trailing,
+  'aria-describedby': ariaDescribedBy,
+  ...rest
+}: InputProps) {
   const generatedId = useId()
   const inputId = id ?? generatedId
+  const hintId = hint ? `${inputId}-hint` : undefined
+  const errorId = error ? `${inputId}-error` : undefined
 
   return (
     <FieldShell
       label={label}
       htmlFor={inputId}
       hint={hint}
+      hintId={hintId}
       error={error}
+      errorId={errorId}
       required={required}
       className={containerClassName}
     >
-      <input
-        ref={inputRef}
-        id={inputId}
-        aria-invalid={error ? true : undefined}
-        className={cx(CONTROL, error && 'border-rose-400/70', className)}
-        {...rest}
-      />
+      <div className="relative">
+        <input
+          ref={inputRef}
+          id={inputId}
+          required={required}
+          aria-invalid={error ? 'true' : 'false'}
+          aria-describedby={describedBy(ariaDescribedBy, error ? undefined : hintId, errorId)}
+          className={cx(CONTROL, Boolean(trailing) && 'pr-20', error && 'border-rose-400/70', className)}
+          {...rest}
+        />
+        {trailing && <div className="absolute inset-y-0 right-0 flex items-center pr-1">{trailing}</div>}
+      </div>
     </FieldShell>
+  )
+}
+
+type PasswordInputProps = Omit<InputProps, 'type' | 'trailing'>
+
+/** Input de contrasena con un control visible para mostrar u ocultar el valor. */
+export function PasswordInput(props: PasswordInputProps) {
+  const [visible, setVisible] = useState(false)
+
+  return (
+    <Input
+      {...props}
+      type={visible ? 'text' : 'password'}
+      trailing={
+        <button
+          type="button"
+          onClick={() => setVisible((current) => !current)}
+          aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+          aria-pressed={visible}
+          className="flex h-full items-center px-2 font-pixel text-[0.5625rem] uppercase tracking-[0.04em] text-ink-500 transition-colors hover:text-ink-900"
+        >
+          {visible ? 'Ocultar' : 'Ver'}
+        </button>
+      }
+    />
   )
 }
 
@@ -83,23 +152,44 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   containerClassName?: string
 }
 
-export function Textarea({ label, hint, error, containerClassName, className, id, required, ...rest }: TextareaProps) {
+export function Textarea({
+  label,
+  hint,
+  error,
+  containerClassName,
+  className,
+  id,
+  required,
+  'aria-describedby': ariaDescribedBy,
+  ...rest
+}: TextareaProps) {
   const generatedId = useId()
   const textareaId = id ?? generatedId
+  const hintId = hint ? `${textareaId}-hint` : undefined
+  const errorId = error ? `${textareaId}-error` : undefined
 
   return (
     <FieldShell
       label={label}
       htmlFor={textareaId}
       hint={hint}
+      hintId={hintId}
       error={error}
+      errorId={errorId}
       required={required}
       className={containerClassName}
     >
       <textarea
         id={textareaId}
-        aria-invalid={error ? true : undefined}
-        className={cx(CONTROL, 'min-h-24 resize-y', error && 'border-rose-400/70', className)}
+        required={required}
+        aria-invalid={error ? 'true' : 'false'}
+        aria-describedby={describedBy(ariaDescribedBy, error ? undefined : hintId, errorId)}
+        className={cx(
+          CONTROL,
+          'min-h-24 max-h-48 resize-y [field-sizing:content]',
+          error && 'border-rose-400/70',
+          className,
+        )}
         {...rest}
       />
     </FieldShell>
@@ -113,14 +203,39 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   containerClassName?: string
 }
 
-export function Select({ label, hint, error, containerClassName, className, id, children, ...rest }: SelectProps) {
+export function Select({
+  label,
+  hint,
+  error,
+  containerClassName,
+  className,
+  id,
+  required,
+  children,
+  'aria-describedby': ariaDescribedBy,
+  ...rest
+}: SelectProps) {
   const generatedId = useId()
   const selectId = id ?? generatedId
+  const hintId = hint ? `${selectId}-hint` : undefined
+  const errorId = error ? `${selectId}-error` : undefined
 
   return (
-    <FieldShell label={label} htmlFor={selectId} hint={hint} error={error} className={containerClassName}>
+    <FieldShell
+      label={label}
+      htmlFor={selectId}
+      hint={hint}
+      hintId={hintId}
+      error={error}
+      errorId={errorId}
+      required={required}
+      className={containerClassName}
+    >
       <select
         id={selectId}
+        required={required}
+        aria-invalid={error ? 'true' : 'false'}
+        aria-describedby={describedBy(ariaDescribedBy, error ? undefined : hintId, errorId)}
         className={cx(CONTROL, 'appearance-none bg-[position:right_0.6rem_center] pr-9', className)}
         style={{
           backgroundImage:

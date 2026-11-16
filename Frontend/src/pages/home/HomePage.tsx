@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
-import { Button } from '../../components/ui/Button'
+import { ButtonLink } from '../../components/ui/ButtonLink'
 import { Panel } from '../../components/ui/Panel'
 import { PixelIcon } from '../../components/ui/PixelIcon'
 import { CATEGORY_META, CATEGORY_ORDER } from '../../lib/domain'
 import { cx } from '../../lib/cx'
+import { usePageTitle } from '../../lib/usePageTitle'
 
 const STEPS = [
   {
@@ -28,6 +29,8 @@ const STEPS = [
 ]
 
 export function HomePage() {
+  usePageTitle('Inicio')
+
   const { status, user } = useAuth()
   const authenticated = status === 'authenticated'
 
@@ -52,29 +55,31 @@ export function HomePage() {
           <div className="grid gap-3 sm:flex sm:flex-wrap">
             {authenticated ? (
               <>
-                <Link to="/capturar" className="block sm:inline-block">
-                  <Button size="lg" icon={<PixelIcon name="camera" size={15} />} className="w-full sm:w-auto">
-                    Capturar ahora
-                  </Button>
-                </Link>
-                <Link to="/pokedex" className="block sm:inline-block">
-                  <Button variant="secondary" size="lg" className="w-full sm:w-auto">
-                    Ver mi Pokédex
-                  </Button>
-                </Link>
+                <ButtonLink
+                  to="/capturar"
+                  size="lg"
+                  icon={<PixelIcon name="camera" size={15} />}
+                  className="w-full sm:w-auto"
+                >
+                  Capturar ahora
+                </ButtonLink>
+                <ButtonLink to="/pokedex" variant="secondary" size="lg" className="w-full sm:w-auto">
+                  Ver mi Pokédex
+                </ButtonLink>
               </>
             ) : (
               <>
-                <Link to="/registro" className="block sm:inline-block">
-                  <Button size="lg" icon={<PixelIcon name="ball" size={15} />} className="w-full sm:w-auto">
-                    Empezar a capturar
-                  </Button>
-                </Link>
-                <Link to="/pokedex" className="block sm:inline-block">
-                  <Button variant="secondary" size="lg" className="w-full sm:w-auto">
-                    Explorar el catálogo
-                  </Button>
-                </Link>
+                <ButtonLink
+                  to="/registro"
+                  size="lg"
+                  icon={<PixelIcon name="ball" size={15} />}
+                  className="w-full sm:w-auto"
+                >
+                  Empezar a capturar
+                </ButtonLink>
+                <ButtonLink to="/pokedex" variant="secondary" size="lg" className="w-full sm:w-auto">
+                  Explorar el catálogo
+                </ButtonLink>
               </>
             )}
           </div>
@@ -177,16 +182,12 @@ export function HomePage() {
             Creá tu cuenta en menos de un minuto, capturá tu primer famoso y entrá al ranking de cazadores.
           </p>
           <div className="mt-5 grid gap-3 sm:flex sm:flex-wrap sm:justify-center">
-            <Link to="/registro" className="block sm:inline-block">
-              <Button size="lg" className="w-full sm:w-auto">
-                Crear cuenta
-              </Button>
-            </Link>
-            <Link to="/login" className="block sm:inline-block">
-              <Button variant="ghost" size="lg" className="w-full sm:w-auto">
-                Ya tengo cuenta
-              </Button>
-            </Link>
+            <ButtonLink to="/registro" size="lg" className="w-full sm:w-auto">
+              Crear cuenta
+            </ButtonLink>
+            <ButtonLink to="/login" variant="ghost" size="lg" className="w-full sm:w-auto">
+              Ya tengo cuenta
+            </ButtonLink>
           </div>
         </section>
       )}

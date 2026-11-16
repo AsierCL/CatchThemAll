@@ -29,13 +29,14 @@ interface AvatarProps {
   photoUrl?: string
   size?: AvatarSize
   className?: string
+  loading?: 'lazy' | 'eager'
 }
 
 /**
  * Retrato con marco duro. Si no hay `photoUrl` (las vistas `Basic` no la traen)
  * se muestra un bloque de iniciales con color estable por nombre.
  */
-export function Avatar({ name, photoUrl, size = 'md', className }: AvatarProps) {
+export function Avatar({ name, photoUrl, size = 'md', className, loading = 'lazy' }: AvatarProps) {
   const base = cx('shrink-0 border-2 object-cover', SIZES[size], className)
 
   if (photoUrl) {
@@ -43,7 +44,8 @@ export function Avatar({ name, photoUrl, size = 'md', className }: AvatarProps) 
       <img
         src={photoUrl}
         alt={`Foto de ${name}`}
-        loading="lazy"
+        loading={loading}
+        decoding="async"
         className={cx(base, 'border-paper-400 bg-paper-100')}
       />
     )

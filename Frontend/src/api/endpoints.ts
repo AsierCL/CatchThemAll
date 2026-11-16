@@ -1,6 +1,7 @@
 import { http } from './client'
 import type {
   CaptureResponse,
+  FamousCategory,
   FamousFilters,
   FamousResponse,
   JsonPatchOperation,
@@ -10,6 +11,8 @@ import type {
   UserRegisterRequest,
   UserResponse,
 } from './types'
+
+const FAMOUS_CATEGORIES: FamousCategory[] = ['legendary', 'epic', 'rare', 'common']
 
 /**
  * Endpoints tipados de `docs/openapi.json`. Cada funcion devuelve el cuerpo ya
@@ -104,7 +107,26 @@ export const famousApi = {
     const { data } = await http.get<FamousResponse[]>('/famous', {
       params: Object.keys(params).length > 0 ? params : undefined,
     })
-    return data
+
+    // El backend cachea `GET /famous` sin filtros bajo la clave "null-null". Si
+    // esa entrada se genero antes de cargar el catalogo, queda una lista vacia
+    // hasta que expire (24 h) y "Todas"/"Todos" no muestra ningun famoso.
+    // Pedir por categoria esquiva esa clave; luego se unen y ordenan los cuatro
+    // resultados. Con filtros activos la respuesta original ya es correcta.
+    if (data.length > 0 || params.type || params.category) return data
+
+    const byCategory = await Promise.all(
+      FAMOUS_CATEGORIES.map((category) =>
+        http.get<FamousResponse[]>('/famous', { params: { category } }),
+      ),
+    )
+
+    const byId = new Map<string, FamousResponse>()
+    for (const response of byCategory) {
+      for (const famous of response.data) byId.set(famous.famousId, famous)
+    }
+
+    return [...byId.values()].toSorted((a, b) => a.pokedexNumber - b.pokedexNumber)
   },
 
   async get(famousId: string): Promise<FamousResponse> {

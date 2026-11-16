@@ -9,6 +9,7 @@ import { Panel } from '../../components/ui/Panel'
 import { cx } from '../../lib/cx'
 import { formatNumber } from '../../lib/format'
 import { useAsync } from '../../lib/useAsync'
+import { usePageTitle } from '../../lib/usePageTitle'
 
 type PodiumAccent = 'legendary' | 'rare' | 'common'
 
@@ -24,6 +25,8 @@ const PODIUM_ORDER: PodiumAccent[] = ['legendary', 'rare', 'common']
 const ROW_GRID = 'grid-cols-[2.25rem_minmax(0,1fr)_auto] sm:grid-cols-[3.5rem_minmax(0,1fr)_7rem_6rem]'
 
 export function RankingPage() {
+  usePageTitle('Ranking de cazadores')
+
   const { user } = useAuth()
   const ranking = useAsync(() => usersApi.ranking(), [])
 
@@ -152,8 +155,8 @@ function PodiumCard({ position, accent, entry, isCurrent }: PodiumCardProps) {
           {position}°
         </span>
 
-        <Avatar name={entry.name} photoUrl={entry.photoUrl} size="sm" className="sm:hidden" />
-        <Avatar name={entry.name} photoUrl={entry.photoUrl} size="lg" className="hidden sm:inline-flex" />
+        <Avatar name={entry.name} photoUrl={entry.photoUrl} size="sm" className="sm:hidden" loading="eager" />
+        <Avatar name={entry.name} photoUrl={entry.photoUrl} size="lg" className="hidden sm:inline-flex" loading="eager" />
 
         <div className="min-w-0 flex-1 space-y-1 sm:flex-none">
           <p className="line-clamp-2 font-pixel text-sm leading-tight text-ink-900 sm:line-clamp-none">{entry.name}</p>

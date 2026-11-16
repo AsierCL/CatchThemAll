@@ -44,14 +44,30 @@ interface SectionHeadingProps {
   description?: string
   action?: ReactNode
   className?: string
+  /** Nivel del titulo. Las pantallas principales deben usar `h1`. */
+  as?: 'h1' | 'h2' | 'h3'
 }
 
-export function SectionHeading({ eyebrow, title, description, action, className }: SectionHeadingProps) {
+export function SectionHeading({
+  eyebrow,
+  title,
+  description,
+  action,
+  className,
+  as: Heading = 'h2',
+}: SectionHeadingProps) {
   return (
     <div className={cx('flex flex-wrap items-end justify-between gap-4', className)}>
       <div className="space-y-1.5">
         {eyebrow && <p className="label-pixel">{eyebrow}</p>}
-        <h2 className="font-pixel text-lg text-ink-900 sm:text-xl">{title}</h2>
+        <Heading
+          className={cx(
+            'font-pixel text-ink-900',
+            Heading === 'h1' ? 'text-lg sm:text-2xl' : 'text-lg sm:text-xl',
+          )}
+        >
+          {title}
+        </Heading>
         {description && <p className="max-w-xl text-sm text-ink-500">{description}</p>}
       </div>
       {action}

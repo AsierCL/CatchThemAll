@@ -138,7 +138,12 @@ La versión de escritorio no cambia: las adaptaciones viven detrás de `sm:` / `
 
 - HTML semántico, un solo `h1` por pantalla, `aria-label` en controles sin texto visible y `role="alert"` /
   `aria-live` en errores y toasts.
-- Modal propio con foco inicial, cierre con `Escape`, bloqueo de scroll y devolución del foco al abrir/cerrar.
+- Formularios con `aria-describedby` hacia el error y `aria-invalid` sincronizado; al enviar, el foco va al
+  primer campo inválido.
+- Modal nativo `<dialog>`: top layer, foco atrapado por el navegador, cierre con `Escape`, light dismiss con
+  `closedby="any"` y devolución automática del foco. Sin `overflow: hidden` sobre `html`/`body`.
+- Menú móvil con Popover API (`popovertarget` / `popover="auto"`): light dismiss y `Escape` sin handlers
+  manuales. Los toasts se pausan si el foco o el puntero están sobre la notificación.
 - Foco visible con contorno mint de 2px en todos los interactivos.
 - Los estados de carga y error siempre tienen texto, no solo color.
 

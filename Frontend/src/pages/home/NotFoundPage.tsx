@@ -1,9 +1,11 @@
-import { Link } from 'react-router-dom'
-import { Button } from '../../components/ui/Button'
+import { ButtonLink } from '../../components/ui/ButtonLink'
 import { Panel } from '../../components/ui/Panel'
 import { PixelIcon } from '../../components/ui/PixelIcon'
+import { usePageTitle } from '../../lib/usePageTitle'
 
 export function NotFoundPage() {
+  usePageTitle('Página no encontrada')
+
   return (
     <div className="mx-auto max-w-lg">
       <Panel className="space-y-4 text-center">
@@ -16,14 +18,12 @@ export function NotFoundPage() {
           <PixelIcon name="ball" size={44} accentColor="var(--color-ink-900)" className="animate-float" />
         </div>
         <div className="flex flex-wrap justify-center gap-2">
-          <Link to="/pokedex">
-            <Button size="sm">Ir a la Pokédex</Button>
-          </Link>
-          <Link to="/">
-            <Button variant="ghost" size="sm">
-              Volver al inicio
-            </Button>
-          </Link>
+          <ButtonLink to="/pokedex" size="sm">
+            Ir a la Pokédex
+          </ButtonLink>
+          <ButtonLink to="/" variant="ghost" size="sm">
+            Volver al inicio
+          </ButtonLink>
         </div>
       </Panel>
     </div>

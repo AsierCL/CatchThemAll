@@ -17,6 +17,8 @@ interface ProgressBarProps {
   value: number
   tone?: Tone
   label?: string
+  /** Nombre accesible cuando la etiqueta visible es solo el nivel de similitud. */
+  ariaLabel?: string
   showValue?: boolean
   className?: string
 }
@@ -25,7 +27,14 @@ interface ProgressBarProps {
  * Barra segmentada tipo consola: 20 bloques, sin transiciones largas, con un
  * `steps()` para que el avance se sienta a saltos.
  */
-export function ProgressBar({ value, tone = 'brand', label, showValue = false, className }: ProgressBarProps) {
+export function ProgressBar({
+  value,
+  tone = 'brand',
+  label,
+  ariaLabel,
+  showValue = false,
+  className,
+}: ProgressBarProps) {
   const safe = Number.isFinite(value) ? Math.min(Math.max(value, 0), 1) : 0
   const filled = Math.round(safe * SEGMENTS)
 
@@ -42,12 +51,13 @@ export function ProgressBar({ value, tone = 'brand', label, showValue = false, c
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(safe * 100)}
-        aria-label={label}
+        aria-label={ariaLabel ?? label}
         className="flex h-3 w-full gap-px border-2 border-paper-300 bg-paper-50/70 p-px"
       >
         {Array.from({ length: SEGMENTS }, (_, index) => (
           <span
             key={index}
+            aria-hidden="true"
             className={cx('h-full flex-1 transition-opacity duration-150', index < filled ? FILL[tone] : 'bg-paper-200/40')}
           />
         ))}

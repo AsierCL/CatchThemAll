@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { famousApi } from '../../api/endpoints'
 import type { FamousCategory, FamousResponse, FamousType } from '../../api/types'
 import { FamousCard } from '../../components/famous/FamousCard'
 import { Button } from '../../components/ui/Button'
+import { ButtonLink } from '../../components/ui/ButtonLink'
 import { EmptyState, ErrorState, LoadingGrid } from '../../components/ui/Feedback'
 import { Input } from '../../components/ui/Field'
 import { Panel, SectionHeading } from '../../components/ui/Panel'
@@ -12,6 +12,7 @@ import { useAuth } from '../../auth/AuthContext'
 import { cx } from '../../lib/cx'
 import { CATEGORY_META, CATEGORY_ORDER, TYPE_META, TYPE_ORDER } from '../../lib/domain'
 import { useAsync } from '../../lib/useAsync'
+import { usePageTitle } from '../../lib/usePageTitle'
 
 function normalize(value: string): string {
   return value
@@ -50,6 +51,8 @@ function FilterChip({
 }
 
 export function PokedexPage() {
+  usePageTitle('Pokédex de famosos')
+
   const { status } = useAuth()
   const [type, setType] = useState<FamousType | null>(null)
   const [category, setCategory] = useState<FamousCategory | null>(null)
@@ -67,7 +70,7 @@ export function PokedexPage() {
     const term = normalize(query.trim())
     const list = data ?? []
     const filtered = term ? list.filter((famous) => normalize(famous.name).includes(term)) : list
-    return [...filtered].sort((a, b) => a.pokedexNumber - b.pokedexNumber)
+    return filtered.toSorted((a, b) => a.pokedexNumber - b.pokedexNumber)
   }, [data, query])
 
   const activeFilters = (type ? 1 : 0) + (category ? 1 : 0) + (query.trim() ? 1 : 0)
@@ -82,19 +85,19 @@ export function PokedexPage() {
   return (
     <div className="space-y-6">
       <SectionHeading
+        as="h1"
         eyebrow="Catálogo nacional"
         title="Pokédex de famosos"
         description="Todos los famosos registrados, con su rareza y cuántos cazadores ya los atraparon. Elegí uno y capturalo con una foto."
         action={
-          <Link
+          <ButtonLink
             to={status === 'authenticated' ? '/capturar' : '/login'}
             state={{ from: '/capturar' }}
-            className="block max-sm:w-full"
+            icon={<PixelIcon name="camera" size={14} />}
+            className="max-sm:w-full"
           >
-            <Button icon={<PixelIcon name="camera" size={14} />} className="max-sm:w-full">
-              Capturar
-            </Button>
-          </Link>
+            Capturar
+          </ButtonLink>
         }
       />
 
@@ -110,7 +113,7 @@ export function PokedexPage() {
         />
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t-2 border-paper-200 pt-3">
-          <p className="font-pixel text-[0.625rem] uppercase tracking-[0.05em] text-ink-400">
+          <p role="status" className="font-pixel text-[0.625rem] uppercase tracking-[0.05em] text-ink-400">
             {loading ? 'Cargando…' : `${visible.length} resultado${visible.length === 1 ? '' : 's'}`}
           </p>
           {activeFilters > 0 && (

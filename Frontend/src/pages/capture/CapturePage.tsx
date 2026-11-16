@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { capturesApi, famousApi, MAX_IMAGE_BYTES } from '../../api/endpoints'
 import { toAppError, type AppError } from '../../api/errors'
 import type { CaptureResponse, FamousResponse } from '../../api/types'
 import { useAuth } from '../../auth/AuthContext'
 import { Button } from '../../components/ui/Button'
+import { ButtonLink } from '../../components/ui/ButtonLink'
 import { EmptyState, ErrorState, LoadingBlock, Spinner } from '../../components/ui/Feedback'
 import { Input } from '../../components/ui/Field'
 import { Panel, SectionHeading } from '../../components/ui/Panel'
@@ -21,6 +22,7 @@ import {
 } from '../../lib/domain'
 import { formatDateTime } from '../../lib/format'
 import { useAsync } from '../../lib/useAsync'
+import { usePageTitle } from '../../lib/usePageTitle'
 
 interface CapturedImage {
   file: File | Blob
@@ -54,6 +56,8 @@ function cameraErrorMessage(error: unknown): string {
 
 /** Elige un famoso del catálogo y captura su rostro desde archivo o cámara. */
 export function CapturePage() {
+  usePageTitle('Capturar un famoso')
+
   const { user, refreshUser } = useAuth()
   const toast = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -114,7 +118,7 @@ export function CapturePage() {
     const term = query.trim().toLowerCase()
     const list = catalog.data ?? []
     const filtered = term ? list.filter((famous) => famous.name.toLowerCase().includes(term)) : list
-    return [...filtered].sort((a, b) => a.pokedexNumber - b.pokedexNumber).slice(0, 40)
+    return filtered.toSorted((a, b) => a.pokedexNumber - b.pokedexNumber).slice(0, 40)
   }, [catalog.data, query])
 
   function applyImage(file: File | Blob, filename: string) {
@@ -275,6 +279,7 @@ export function CapturePage() {
   return (
     <div className="space-y-6">
       <SectionHeading
+        as="h1"
         eyebrow="Modo captura"
         title="Capturar un famoso"
         description="Elegí a quién vas a capturar y subí una foto reciente, o sacala en el momento. El servicio compara el rostro con las muestras del famoso."
@@ -322,6 +327,10 @@ export function CapturePage() {
                 <>
                   <Input
                     label="Buscar en el catálogo"
+                    name="famoso"
+                    type="search"
+                    autoComplete="off"
+                    enterKeyHint="search"
                     placeholder="Nombre del famoso"
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
@@ -369,11 +378,10 @@ export function CapturePage() {
                 Foto del rostro
               </h2>
 
-              <div role="tablist" aria-label="Origen de la foto" className="flex gap-2">
+              <div role="group" aria-label="Origen de la foto" className="flex gap-2">
                 <button
                   type="button"
-                  role="tab"
-                  aria-selected={mode === 'file'}
+                  aria-pressed={mode === 'file'}
                   onClick={() => {
                     stopCamera()
                     setMode('file')
@@ -390,8 +398,7 @@ export function CapturePage() {
                 </button>
                 <button
                   type="button"
-                  role="tab"
-                  aria-selected={mode === 'camera'}
+                  aria-pressed={mode === 'camera'}
                   onClick={() => void openCamera()}
                   className={cx(
                     'flex flex-1 items-center justify-center gap-2 border-2 px-3 py-2 font-pixel text-[0.625rem] uppercase transition-colors',
@@ -604,16 +611,17 @@ function CaptureResult({ result, onAgain }: { result: CaptureResponse; onAgain: 
           >
             Capturar otro
           </Button>
-          <Link to="/mi-pokedex" className="block sm:inline-block">
-            <Button size="sm" icon={<PixelIcon name="grid" size={13} />} className="w-full sm:w-auto">
-              Ver mi Pokédex
-            </Button>
-          </Link>
-          <Link to={`/pokedex/${result.famousId}`} className="block sm:inline-block">
-            <Button variant="ghost" size="sm" className="w-full sm:w-auto">
-              Ver la ficha
-            </Button>
-          </Link>
+          <ButtonLink
+            to="/mi-pokedex"
+            size="sm"
+            icon={<PixelIcon name="grid" size={13} />}
+            className="w-full sm:w-auto"
+          >
+            Ver mi Pokédex
+          </ButtonLink>
+          <ButtonLink to={`/pokedex/${result.famousId}`} variant="ghost" size="sm" className="w-full sm:w-auto">
+            Ver la ficha
+          </ButtonLink>
         </div>
       </Panel>
 

@@ -1,11 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { cx } from '../../lib/cx'
 import { formatNumber } from '../../lib/format'
 import { Avatar } from '../ui/Avatar'
 import { Button } from '../ui/Button'
+import { ButtonLink } from '../ui/ButtonLink'
 import { PixelIcon } from '../ui/PixelIcon'
+
+const CAN_USE_POPOVER = typeof HTMLElement !== 'undefined' && 'popover' in HTMLElement.prototype
 
 const NAV_ITEMS = [
   { to: '/pokedex', label: 'Pokédex' },
@@ -33,15 +36,39 @@ function Wordmark() {
 export function Navbar() {
   const { status, user, logout } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
   const navigate = useNavigate()
 
-  // Cerrar el panel movil al navegar.
-  useEffect(() => setMenuOpen(false), [location.pathname])
-
-  // Escape cierra el panel, igual que en los dialogos.
+  // El popover nativo avisa cuando se abre o se cierra (light dismiss, Escape,
+  // click en un enlace). Mantenemos `aria-expanded` y el icono sincronizados.
   useEffect(() => {
-    if (!menuOpen) return
+    const menu = menuRef.current
+    if (!menu) return
+    const handleToggle = (event: Event) => {
+      const state = (event as Event & { newState?: string }).newState
+      setMenuOpen(state === 'open')
+    }
+    menu.addEventListener('toggle', handleToggle)
+    return () => menu.removeEventListener('toggle', handleToggle)
+  }, [])
+
+  // Cerrar el panel movil al navegar.
+  useEffect(() => {
+    const menu = menuRef.current
+    if (menu) {
+      try {
+        if (menu.matches(':popover-open')) menu.hidePopover()
+      } catch {
+        // Popover no soportado: el fallback usa el estado.
+      }
+    }
+    if (!CAN_USE_POPOVER) setMenuOpen(false)
+  }, [location.pathname])
+
+  // Fallback para navegadores sin Popover API.
+  useEffect(() => {
+    if (CAN_USE_POPOVER || !menuOpen) return
     function handleKey(event: KeyboardEvent) {
       if (event.key === 'Escape') setMenuOpen(false)
     }
@@ -92,7 +119,7 @@ export function Navbar() {
                 className="flex size-11 items-center justify-center border-2 border-transparent transition-colors hover:border-paper-300 sm:size-auto sm:justify-start sm:gap-2 sm:px-1 sm:py-1"
                 title="Mi perfil"
               >
-                <Avatar name={user.name} photoUrl={user.photoUrl} size="xs" />
+                <Avatar name={user.name} photoUrl={user.photoUrl} size="xs" loading="eager" />
                 <span className="hidden max-w-24 truncate font-pixel text-[0.625rem] uppercase text-ink-700 sm:inline">
                   {user.name}
                 </span>
@@ -113,33 +140,40 @@ export function Navbar() {
             </>
           ) : (
             <div className="hidden items-center gap-2 md:flex">
-              <Link to="/login">
-                <Button variant="ghost" size="sm">
-                  Entrar
-                </Button>
-              </Link>
-              <Link to="/registro">
-                <Button size="sm">Crear cuenta</Button>
-              </Link>
+              <ButtonLink to="/login" variant="ghost" size="sm">
+                Entrar
+              </ButtonLink>
+              <ButtonLink to="/registro" size="sm">
+                Crear cuenta
+              </ButtonLink>
             </div>
           )}
 
           <button
             type="button"
             className="flex size-11 items-center justify-center border-2 border-paper-300 text-ink-700 transition-colors hover:border-paper-400 hover:text-ink-900 md:hidden"
+            popoverTarget={CAN_USE_POPOVER ? 'menu-movil' : undefined}
+            popoverTargetAction={CAN_USE_POPOVER ? 'toggle' : undefined}
             aria-expanded={menuOpen}
             aria-controls="menu-movil"
             aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
-            onClick={() => setMenuOpen((open) => !open)}
+            onClick={() => {
+              if (!CAN_USE_POPOVER) setMenuOpen((open) => !open)
+            }}
           >
             <PixelIcon name={menuOpen ? 'close' : 'menu'} size={16} />
           </button>
         </div>
       </div>
 
-      {menuOpen && (
-        <div id="menu-movil" className="animate-rise border-t-2 border-paper-300 bg-paper-100 md:hidden">
-          <div className="mx-auto max-w-6xl p-4">
+      <div
+        ref={menuRef}
+        id="menu-movil"
+        popover={CAN_USE_POPOVER ? 'auto' : undefined}
+        hidden={!CAN_USE_POPOVER && !menuOpen ? true : undefined}
+        className="site-menu-popover md:hidden"
+      >
+        <div className="mx-auto max-w-6xl p-4">
             {status === 'authenticated' && user ? (
               <div className="space-y-2">
                 <Link
@@ -170,21 +204,16 @@ export function Navbar() {
               </div>
             ) : (
               <div className="grid gap-2">
-                <Link to="/login" className="block">
-                  <Button variant="secondary" size="sm" fullWidth>
-                    Entrar
-                  </Button>
-                </Link>
-                <Link to="/registro" className="block">
-                  <Button size="sm" fullWidth>
-                    Crear cuenta
-                  </Button>
-                </Link>
+                <ButtonLink to="/login" variant="secondary" size="sm" fullWidth>
+                  Entrar
+                </ButtonLink>
+                <ButtonLink to="/registro" size="sm" fullWidth>
+                  Crear cuenta
+                </ButtonLink>
               </div>
             )}
-          </div>
         </div>
-      )}
+      </div>
     </header>
   )
 }

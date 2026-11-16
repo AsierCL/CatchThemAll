@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { Avatar } from '../../components/ui/Avatar'
 import { Button } from '../../components/ui/Button'
+import { ButtonLink } from '../../components/ui/ButtonLink'
 import { SectionHeading } from '../../components/ui/Panel'
 import { PixelIcon, type IconName } from '../../components/ui/PixelIcon'
 import { formatNumber } from '../../lib/format'
+import { usePageTitle } from '../../lib/usePageTitle'
 import { DeleteAccountDialog } from './DeleteAccountDialog'
 import { EditProfileModal } from './EditProfileModal'
 
@@ -28,6 +29,8 @@ function StatCard({ label, value, icon }: StatCardProps) {
 }
 
 export function ProfilePage() {
+  usePageTitle('Mi perfil')
+
   const { status, user, setUser, logout } = useAuth()
   const [editing, setEditing] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -37,7 +40,7 @@ export function ProfilePage() {
   return (
     <div className="space-y-8">
       <section className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-start sm:gap-6 sm:text-left">
-        <Avatar name={user.name} photoUrl={user.photoUrl} size="lg" />
+        <Avatar name={user.name} photoUrl={user.photoUrl} size="lg" loading="eager" />
         <div className="min-w-0 flex-1 space-y-2">
           <p className="label-pixel">Mi perfil</p>
           <h1 className="font-pixel text-xl leading-tight text-ink-900 sm:text-2xl">{user.name}</h1>
@@ -58,16 +61,22 @@ export function ProfilePage() {
       </section>
 
       <section aria-label="Acciones del perfil" className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-        <Link to="/mi-pokedex" className="block">
-          <Button variant="secondary" icon={<PixelIcon name="ball" size={14} />} className="w-full sm:w-auto">
-            Mi Pokédex
-          </Button>
-        </Link>
-        <Link to="/amigos" className="block">
-          <Button variant="secondary" icon={<PixelIcon name="users" size={14} />} className="w-full sm:w-auto">
-            Mis amigos
-          </Button>
-        </Link>
+        <ButtonLink
+          to="/mi-pokedex"
+          variant="secondary"
+          icon={<PixelIcon name="ball" size={14} />}
+          className="w-full sm:w-auto"
+        >
+          Mi Pokédex
+        </ButtonLink>
+        <ButtonLink
+          to="/amigos"
+          variant="secondary"
+          icon={<PixelIcon name="users" size={14} />}
+          className="w-full sm:w-auto"
+        >
+          Mis amigos
+        </ButtonLink>
         <Button
           variant="primary"
           icon={<PixelIcon name="user" size={14} />}

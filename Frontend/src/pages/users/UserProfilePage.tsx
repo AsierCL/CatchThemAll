@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { toAppError } from '../../api/errors'
 import { usersApi } from '../../api/endpoints'
 import type { UserResponse } from '../../api/types'
@@ -7,12 +7,14 @@ import { useAuth } from '../../auth/AuthContext'
 import { Avatar } from '../../components/ui/Avatar'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
+import { ButtonLink } from '../../components/ui/ButtonLink'
 import { ErrorState, LoadingBlock } from '../../components/ui/Feedback'
 import { Panel } from '../../components/ui/Panel'
 import { PixelIcon } from '../../components/ui/PixelIcon'
 import { useToast } from '../../components/ui/Toast'
 import { formatNumber } from '../../lib/format'
 import { useAsync } from '../../lib/useAsync'
+import { usePageTitle } from '../../lib/usePageTitle'
 
 interface ProfileResult {
   profile: UserResponse
@@ -26,6 +28,8 @@ export function UserProfilePage() {
   const [adding, setAdding] = useState(false)
 
   const result = useAsync(() => loadProfile(userId, me), [userId, me?.userId])
+
+  usePageTitle(result.data ? `${result.data.profile.name} · Perfil` : 'Perfil de cazador')
 
   if (result.loading) {
     return (
@@ -66,7 +70,7 @@ export function UserProfilePage() {
 
       <Panel elevation="raised">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
-          <Avatar name={profile.name} photoUrl={profile.photoUrl} size="lg" className="mx-auto sm:mx-0" />
+          <Avatar name={profile.name} photoUrl={profile.photoUrl} size="lg" className="mx-auto sm:mx-0" loading="eager" />
 
           <div className="min-w-0 flex-1 space-y-4">
             <div className="space-y-2">
@@ -96,11 +100,15 @@ export function UserProfilePage() {
 
             <div className="flex flex-wrap items-center gap-2">
               {isOwnProfile ? (
-                <Link to="/perfil" className="block max-sm:w-full">
-                  <Button variant="secondary" size="sm" icon={<PixelIcon name="user" size={12} />} className="max-sm:w-full">
-                    Ver mi perfil
-                  </Button>
-                </Link>
+                <ButtonLink
+                  to="/perfil"
+                  variant="secondary"
+                  size="sm"
+                  icon={<PixelIcon name="user" size={12} />}
+                  className="max-sm:w-full"
+                >
+                  Ver mi perfil
+                </ButtonLink>
               ) : me && !isFriend ? (
                 <Button
                   size="sm"

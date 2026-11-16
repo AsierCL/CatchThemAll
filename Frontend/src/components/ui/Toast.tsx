@@ -27,11 +27,25 @@ const TONE_STYLES: Record<ToastTone, { frame: string; icon: IconName; iconClass:
 }
 
 const AUTO_DISMISS_MS = 6000
+const TOAST_LIMIT = 3
+const CAN_USE_POPOVER = typeof HTMLElement !== 'undefined' && 'popover' in HTMLElement.prototype
+
+function isPopoverOpen(element: HTMLElement): boolean {
+  if (!CAN_USE_POPOVER) return false
+  try {
+    return element.matches(':popover-open')
+  } catch {
+    return false
+  }
+}
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([])
+  const [announcement, setAnnouncement] = useState('')
   const nextId = useRef(1)
   const timers = useRef(new Map<number, number>())
+  const regionRef = useRef<HTMLDivElement>(null)
+  const previousFocus = useRef<HTMLElement | null>(null)
 
   const dismiss = useCallback((id: number) => {
     const timer = timers.current.get(id)
@@ -39,20 +53,64 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       window.clearTimeout(timer)
       timers.current.delete(id)
     }
+
+    const region = regionRef.current
+    const focusWasInside = Boolean(region && region.contains(document.activeElement))
     setToasts((current) => current.filter((toast) => toast.id !== id))
+
+    if (focusWasInside) {
+      window.requestAnimationFrame(() => {
+        const nextButton = regionRef.current?.querySelector<HTMLElement>('button')
+        if (nextButton) nextButton.focus()
+        else previousFocus.current?.focus()
+      })
+    }
   }, [])
+
+  const scheduleDismiss = useCallback(
+    (id: number) => {
+      const run = () => {
+        const region = regionRef.current
+        // No cerrar un toast que el usuario esta leyendo o tiene enfocado.
+        if (region && (region.contains(document.activeElement) || region.matches(':hover'))) {
+          timers.current.set(id, window.setTimeout(run, AUTO_DISMISS_MS))
+          return
+        }
+        dismiss(id)
+      }
+      timers.current.set(id, window.setTimeout(run, AUTO_DISMISS_MS))
+    },
+    [dismiss],
+  )
 
   const push = useCallback(
     (toast: Omit<ToastItem, 'id'>) => {
       const id = nextId.current++
-      setToasts((current) => [...current.slice(-2), { ...toast, id }])
-      timers.current.set(
-        id,
-        window.setTimeout(() => dismiss(id), AUTO_DISMISS_MS),
-      )
+      const region = regionRef.current
+      if (region && !isPopoverOpen(region)) {
+        previousFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+      }
+
+      setToasts((current) => [...current.slice(-(TOAST_LIMIT - 1)), { ...toast, id }])
+      setAnnouncement([toast.title, toast.message].filter(Boolean).join('. '))
+      scheduleDismiss(id)
     },
-    [dismiss],
+    [scheduleDismiss],
   )
+
+  // Mantiene el contenedor visual en el top layer para que no quede detras de
+  // un `<dialog>` abierto, y lo cierra cuando no quedan notificaciones.
+  useEffect(() => {
+    const region = regionRef.current
+    if (!region || !CAN_USE_POPOVER) return
+
+    try {
+      if (toasts.length > 0 && !isPopoverOpen(region)) region.showPopover()
+      else if (toasts.length === 0 && isPopoverOpen(region)) region.hidePopover()
+    } catch {
+      // El popover ya no esta conectado (desmontaje); no hay nada que hacer.
+    }
+  }, [toasts.length])
 
   useEffect(() => {
     const pending = timers.current
@@ -75,17 +133,25 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
+
+      {/* Region viva separada del popover: el contenido visible entra y sale del
+          top layer, pero el anuncio para lectores de pantalla siempre vive en el DOM. */}
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {announcement}
+      </div>
+
       <div
-        aria-live="polite"
-        aria-atomic="false"
-        className="pointer-events-none fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] z-200 flex flex-col items-center gap-2 p-3 sm:items-end sm:p-4 md:bottom-0"
+        ref={regionRef}
+        popover={CAN_USE_POPOVER ? 'manual' : undefined}
+        role="region"
+        aria-label="Notificaciones"
+        className={cx('toast-region', !CAN_USE_POPOVER && 'toast-region-fallback')}
       >
         {toasts.map((toast) => {
           const styles = TONE_STYLES[toast.tone]
           return (
             <div
               key={toast.id}
-              role={toast.tone === 'error' ? 'alert' : 'status'}
               className={cx(
                 'pointer-events-auto flex w-full max-w-sm items-start gap-3 border-2 bg-paper-0 p-3 shadow-pixel animate-rise',
                 styles.frame,
@@ -100,7 +166,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 type="button"
                 onClick={() => dismiss(toast.id)}
                 aria-label="Descartar notificación"
-                className="text-ink-400 transition-colors hover:text-ink-900"
+                className="-m-2 flex size-11 shrink-0 items-center justify-center text-ink-400 transition-colors hover:text-ink-900"
               >
                 <PixelIcon name="close" size={12} />
               </button>

@@ -43,14 +43,13 @@ export function DeleteAccountDialog({ user, open, onClose, onLogout }: DeleteAcc
 
     try {
       await usersApi.remove(user.userId)
-      toast.success('Cuenta eliminada', 'Tu cuenta de cazador fue eliminada.')
       onClose()
+      toast.success('Cuenta eliminada', 'Tu cuenta de cazador fue eliminada.')
       onLogout()
       navigate('/')
     } catch (error) {
       const appError = toAppError(error)
       setServerError(`${appError.title}. ${appError.message}`)
-      toast.error(appError.title, appError.message)
     } finally {
       setDeleting(false)
     }
@@ -63,6 +62,7 @@ export function DeleteAccountDialog({ user, open, onClose, onLogout }: DeleteAcc
       title="Eliminar cuenta"
       description="Esta acción es definitiva: se borran tu perfil, tus capturas y tu puntaje."
       size="sm"
+      preventClose={deleting}
       footer={
         <>
           <Button variant="ghost" size="sm" onClick={handleClose} disabled={deleting}>
@@ -82,7 +82,9 @@ export function DeleteAccountDialog({ user, open, onClose, onLogout }: DeleteAcc
 
         <Input
           label="Nombre de cazador"
+          name="confirmation"
           autoComplete="off"
+          data-autofocus
           value={typedName}
           onChange={(event) => {
             setTypedName(event.target.value)

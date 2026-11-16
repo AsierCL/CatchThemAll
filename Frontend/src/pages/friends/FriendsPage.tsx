@@ -15,11 +15,14 @@ import { PixelIcon } from '../../components/ui/PixelIcon'
 import { useToast } from '../../components/ui/Toast'
 import { formatNumber } from '../../lib/format'
 import { useAsync } from '../../lib/useAsync'
+import { usePageTitle } from '../../lib/usePageTitle'
 
 const SEARCH_MIN_CHARS = 2
 const SEARCH_DEBOUNCE_MS = 300
 
 export function FriendsPage() {
+  usePageTitle('Amigos')
+
   const { status, user } = useAuth()
   const toast = useToast()
 

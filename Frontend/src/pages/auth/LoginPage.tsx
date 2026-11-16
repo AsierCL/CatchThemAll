@@ -3,9 +3,11 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { toAppError } from '../../api/errors'
 import { useAuth } from '../../auth/AuthContext'
 import { Button } from '../../components/ui/Button'
-import { Input } from '../../components/ui/Field'
+import { Input, PasswordInput } from '../../components/ui/Field'
 import { PixelIcon } from '../../components/ui/PixelIcon'
 import { useToast } from '../../components/ui/Toast'
+import { announce } from '../../lib/announce'
+import { usePageTitle } from '../../lib/usePageTitle'
 import { validateName, validatePassword, type FieldErrors } from '../../lib/validation'
 import { AuthLayout } from './AuthLayout'
 
@@ -13,7 +15,12 @@ interface LocationState {
   from?: string
 }
 
+const FIELD_ORDER = ['name', 'password'] as const
+type LoginField = (typeof FIELD_ORDER)[number]
+
 export function LoginPage() {
+  usePageTitle('Iniciar sesión')
+
   const { login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -24,6 +31,7 @@ export function LoginPage() {
   const [serverError, setServerError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const nameInputRef = useRef<HTMLInputElement>(null)
+  const dirty = useRef(new Set<LoginField>())
 
   // En escritorio el foco inicial ahorra un clic; en movil abriria el teclado solo.
   useEffect(() => {
@@ -32,21 +40,45 @@ export function LoginPage() {
 
   const from = (location.state as LocationState | null)?.from ?? '/pokedex'
 
-  function update(field: keyof typeof form, value: string) {
+  function validateField(field: LoginField, value: string): string {
+    if (field === 'name') return validateName(value) ?? ''
+    return validatePassword(value) ?? ''
+  }
+
+  function update(field: LoginField, value: string) {
+    dirty.current.add(field)
     setForm((current) => ({ ...current, [field]: value }))
     setErrors((current) => ({ ...current, [field]: '' }))
     setServerError(null)
   }
 
+  function handleBlur(field: LoginField) {
+    if (!dirty.current.has(field)) return
+    const error = validateField(field, form[field])
+    setErrors((current) => ({ ...current, [field]: error }))
+    if (error && errors[field] !== error) announce(error)
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    const formElement = event.currentTarget
 
     const nextErrors: FieldErrors = {
-      name: validateName(form.name) ?? '',
-      password: validatePassword(form.password) ?? '',
+      name: validateField('name', form.name),
+      password: validateField('password', form.password),
     }
     setErrors(nextErrors)
-    if (Object.values(nextErrors).some(Boolean)) return
+
+    if (FIELD_ORDER.some((field) => nextErrors[field])) {
+      const firstInvalid = FIELD_ORDER.find((field) => nextErrors[field])
+      if (firstInvalid) {
+        window.requestAnimationFrame(() => {
+          const control = formElement.elements.namedItem(firstInvalid)
+          if (control instanceof HTMLElement) control.focus()
+        })
+      }
+      return
+    }
 
     setSubmitting(true)
     setServerError(null)
@@ -82,28 +114,34 @@ export function LoginPage() {
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         <Input
           label="Nombre de cazador"
+          name="name"
           autoComplete="username"
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
+          enterKeyHint="next"
           inputRef={nameInputRef}
           placeholder="ada"
           value={form.name}
           onChange={(event) => update('name', event.target.value)}
+          onBlur={() => handleBlur('name')}
           error={errors.name || undefined}
           maxLength={64}
           required
         />
 
-        <Input
+        <PasswordInput
           label="Contraseña"
-          type="password"
+          name="password"
           autoComplete="current-password"
+          enterKeyHint="done"
           placeholder="••••••••"
           value={form.password}
           onChange={(event) => update('password', event.target.value)}
+          onBlur={() => handleBlur('password')}
           error={errors.password || undefined}
           maxLength={72}
+          minLength={8}
           required
         />
 

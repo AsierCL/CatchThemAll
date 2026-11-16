@@ -206,6 +206,24 @@
   p {
     text-wrap: pretty;
   }
+
+  /* El resaltado de autofill del navegador rompe el papel calido: lo reemplazamos
+     por un anillo interior, sin quitar el outline de foco. */
+  input:is(:autofill, :-webkit-autofill),
+  textarea:is(:autofill, :-webkit-autofill) {
+    box-shadow:
+      inset 0 0 0 2px var(--color-poke-300),
+      inset 0 0 0 100vmax var(--color-paper-0);
+    -webkit-text-fill-color: var(--color-ink-900);
+    caret-color: var(--color-ink-900);
+  }
+
+  /* Validacion nativa: el error visual aparece recien despues de interactuar. */
+  input:user-invalid,
+  textarea:user-invalid,
+  select:user-invalid {
+    border-color: var(--color-rose-400);
+  }
 }
 
 @layer components {
@@ -232,12 +250,122 @@
     text-transform: uppercase;
     color: var(--color-ink-500);
   }
+
+  /* Dialogo nativo: el elemento es el panel y el top layer se encarga del resto. */
+  .pixel-dialog {
+    width: calc(100% - 2rem);
+    max-width: var(--dialog-max-width, 32rem);
+    max-height: 85dvh;
+    margin: auto;
+    padding: 0;
+    border: 2px solid var(--color-paper-400);
+    background: var(--color-paper-0);
+    box-shadow: var(--shadow-pixel-lg);
+    color: var(--color-ink-900);
+    overflow: hidden;
+    overscroll-behavior: contain;
+  }
+
+  .pixel-dialog[open] {
+    display: flex;
+    flex-direction: column;
+    animation: rise 260ms steps(3, end);
+  }
+
+  .pixel-dialog::backdrop {
+    overflow: hidden;
+    overscroll-behavior: contain;
+    background-color: rgb(29 26 22 / 0);
+    transition: background-color 200ms ease-out;
+  }
+
+  .pixel-dialog[open]::backdrop {
+    background-color: rgb(29 26 22 / 0.55);
+
+    @starting-style {
+      background-color: rgb(29 26 22 / 0);
+    }
+  }
+
+  /* Panel de navegacion movil en el top layer: posicionado bajo el header fijo. */
+  .site-menu-popover {
+    position: fixed;
+    inset: auto 0 auto 0;
+    top: calc(4rem + 3px + env(safe-area-inset-top, 0px));
+    width: 100%;
+    max-width: none;
+    max-height: calc(100dvh - 4.25rem - env(safe-area-inset-top, 0px));
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-top: 2px solid var(--color-paper-300);
+    background: var(--color-paper-100);
+    color: var(--color-ink-900);
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .site-menu-popover:popover-open {
+    animation: rise 260ms steps(3, end);
+  }
+
+  .site-menu-popover::backdrop {
+    background: transparent;
+  }
+
+  @media (max-width: 39.9375rem) {
+    .pixel-dialog {
+      inset: auto 0 0 0;
+      width: 100%;
+      max-width: none;
+      max-height: 92dvh;
+      margin: 0;
+    }
+  }
+
+  /* Contenedor de toasts. En navegadores con Popover vive en el top layer; sin
+     soporte mantiene el contenedor fijo de siempre. */
+  .toast-region {
+    position: fixed;
+    inset: auto 0 calc(3.5rem + env(safe-area-inset-bottom, 0px)) 0;
+    z-index: 200;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0.75rem;
+    border: 0;
+    background: transparent;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  .toast-region:popover-open {
+    display: flex;
+  }
+
+  .toast-region-fallback {
+    display: flex;
+  }
+
+  @media (min-width: 40rem) {
+    .toast-region {
+      inset: auto 0 0 0;
+      align-items: flex-end;
+      padding: 1rem;
+    }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
-  *::after {
+  *::after,
+  dialog::backdrop {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

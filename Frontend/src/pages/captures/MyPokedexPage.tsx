@@ -2,13 +2,14 @@ import { Link } from 'react-router-dom'
 import { capturesApi } from '../../api/endpoints'
 import type { CaptureResponse } from '../../api/types'
 import { Badge } from '../../components/ui/Badge'
-import { Button } from '../../components/ui/Button'
+import { ButtonLink } from '../../components/ui/ButtonLink'
 import { EmptyState, ErrorState, LoadingBlock } from '../../components/ui/Feedback'
 import { PixelIcon, type IconName } from '../../components/ui/PixelIcon'
 import { ProgressBar } from '../../components/ui/ProgressBar'
 import { formatSimilarity, similarityTier } from '../../lib/domain'
 import { formatDateTime, formatNumber, formatRelative } from '../../lib/format'
 import { useAsync } from '../../lib/useAsync'
+import { usePageTitle } from '../../lib/usePageTitle'
 
 interface StatCardProps {
   label: string
@@ -54,6 +55,7 @@ function CaptureRow({ capture }: { capture: CaptureResponse }) {
         value={capture.similarity}
         tone={tier.tone}
         label={tier.label}
+        ariaLabel="Similitud facial"
         showValue
         className="mt-3"
       />
@@ -62,6 +64,8 @@ function CaptureRow({ capture }: { capture: CaptureResponse }) {
 }
 
 export function MyPokedexPage() {
+  usePageTitle('Mi Pokédex')
+
   const { data, error, loading, reload } = useAsync(() => capturesApi.mine(), [])
   const captures = data ?? []
 
@@ -90,9 +94,9 @@ export function MyPokedexPage() {
           title="Todavía no capturaste a nadie"
           description="Sacá una foto o subí un archivo para sumar tu primer famoso a la Pokédex."
           action={
-            <Link to="/capturar">
-              <Button icon={<PixelIcon name="camera" size={14} />}>Ir a capturar</Button>
-            </Link>
+            <ButtonLink to="/capturar" icon={<PixelIcon name="camera" size={14} />}>
+              Ir a capturar
+            </ButtonLink>
           }
         />
       ) : (

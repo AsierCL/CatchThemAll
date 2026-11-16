@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router-dom'
 import { famousApi } from '../../api/endpoints'
 import type { FamousResponse } from '../../api/types'
 import { useAuth } from '../../auth/AuthContext'
-import { Button } from '../../components/ui/Button'
+import { ButtonLink } from '../../components/ui/ButtonLink'
 import { ErrorState, LoadingBlock } from '../../components/ui/Feedback'
 import { Panel } from '../../components/ui/Panel'
 import { PixelIcon } from '../../components/ui/PixelIcon'
@@ -10,6 +10,7 @@ import { cx } from '../../lib/cx'
 import { CATEGORY_META, formatPokedexNumber, TYPE_META } from '../../lib/domain'
 import { formatNumber } from '../../lib/format'
 import { useAsync } from '../../lib/useAsync'
+import { usePageTitle } from '../../lib/usePageTitle'
 
 function Stat({
   label,
@@ -41,6 +42,8 @@ export function FamousDetailPage() {
     () => famousApi.get(famousId ?? ''),
     [famousId],
   )
+
+  usePageTitle(data ? `${data.name} · Ficha` : 'Ficha de famoso')
 
   const captureTarget = `/capturar?famoso=${famousId ?? ''}`
 
@@ -128,17 +131,18 @@ export function FamousDetailPage() {
               captura a tu nombre.
             </p>
             {status === 'authenticated' ? (
-              <Link to={captureTarget} className="block">
-                <Button fullWidth icon={<PixelIcon name="camera" size={14} />}>
-                  Ir a capturar
-                </Button>
-              </Link>
+              <ButtonLink to={captureTarget} fullWidth icon={<PixelIcon name="camera" size={14} />}>
+                Ir a capturar
+              </ButtonLink>
             ) : (
-              <Link to="/login" state={{ from: captureTarget }} className="block">
-                <Button fullWidth icon={<PixelIcon name="lock" size={14} />}>
-                  Entrar para capturar
-                </Button>
-              </Link>
+              <ButtonLink
+                to="/login"
+                state={{ from: captureTarget }}
+                fullWidth
+                icon={<PixelIcon name="lock" size={14} />}
+              >
+                Entrar para capturar
+              </ButtonLink>
             )}
             <p className="text-[0.6875rem] leading-relaxed text-ink-400">
               Necesitás una foto con el rostro visible. Las imágenes de más de 10 MB se rechazan.

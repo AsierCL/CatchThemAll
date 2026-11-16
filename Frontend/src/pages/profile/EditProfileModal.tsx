@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { toAppError } from '../../api/errors'
 import { usersApi } from '../../api/endpoints'
 import type { JsonPatchOperation, UserResponse } from '../../api/types'
@@ -7,6 +7,7 @@ import { Input, Textarea } from '../../components/ui/Field'
 import { ConfirmDialog, Modal } from '../../components/ui/Modal'
 import { PixelIcon } from '../../components/ui/PixelIcon'
 import { useToast } from '../../components/ui/Toast'
+import { announce } from '../../lib/announce'
 import { validateDescription, validateName, validatePhotoUrl, type FieldErrors } from '../../lib/validation'
 
 interface EditProfileForm {
@@ -14,6 +15,9 @@ interface EditProfileForm {
   description: string
   photoUrl: string
 }
+
+const FIELD_ORDER = ['name', 'description', 'photoUrl'] as const
+type EditProfileField = (typeof FIELD_ORDER)[number]
 
 type RemoveTarget = 'photo' | 'description'
 
@@ -41,6 +45,7 @@ export function EditProfileModal({ user, open, onClose, onSaved }: EditProfileMo
   const [submitting, setSubmitting] = useState(false)
   const [removeTarget, setRemoveTarget] = useState<RemoveTarget | null>(null)
   const [removing, setRemoving] = useState(false)
+  const dirty = useRef(new Set<EditProfileField>())
 
   // Syncs the form with the profile each time the dialog opens (or after a
   // successful save updates the `user` object).
@@ -54,24 +59,56 @@ export function EditProfileModal({ user, open, onClose, onSaved }: EditProfileMo
     setErrors({})
     setServerError(null)
     setRemoveTarget(null)
+    dirty.current.clear()
   }, [open, user])
 
   function update(field: keyof EditProfileForm, value: string) {
+    dirty.current.add(field)
     setForm((current) => ({ ...current, [field]: value }))
     setErrors((current) => ({ ...current, [field]: '' }))
     setServerError(null)
   }
 
+  function validateField(field: EditProfileField, value: string): string {
+    switch (field) {
+      case 'name':
+        return validateName(value) ?? ''
+      case 'description':
+        return validateDescription(value) ?? ''
+      case 'photoUrl':
+        return validatePhotoUrl(value) ?? ''
+    }
+    return ''
+  }
+
+  function handleBlur(field: EditProfileField) {
+    if (!dirty.current.has(field)) return
+    const error = validateField(field, form[field])
+    setErrors((current) => ({ ...current, [field]: error }))
+    if (error && errors[field] !== error) announce(error)
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    const formElement = event.currentTarget
 
     const nextErrors: FieldErrors = {
-      name: validateName(form.name) ?? '',
-      description: validateDescription(form.description) ?? '',
-      photoUrl: validatePhotoUrl(form.photoUrl) ?? '',
+      name: validateField('name', form.name),
+      description: validateField('description', form.description),
+      photoUrl: validateField('photoUrl', form.photoUrl),
     }
     setErrors(nextErrors)
-    if (Object.values(nextErrors).some(Boolean)) return
+
+    if (FIELD_ORDER.some((field) => nextErrors[field])) {
+      const firstInvalid = FIELD_ORDER.find((field) => nextErrors[field])
+      if (firstInvalid) {
+        window.requestAnimationFrame(() => {
+          const control = formElement.elements.namedItem(firstInvalid)
+          if (control instanceof HTMLElement) control.focus()
+        })
+      }
+      return
+    }
 
     setSubmitting(true)
     setServerError(null)
@@ -83,12 +120,11 @@ export function EditProfileModal({ user, open, onClose, onSaved }: EditProfileMo
         photoUrl: form.photoUrl.trim(),
       })
       onSaved(updated)
-      toast.success('Perfil actualizado', 'Los cambios quedaron guardados.')
       onClose()
+      toast.success('Perfil actualizado', 'Los cambios quedaron guardados.')
     } catch (error) {
       const appError = toAppError(error)
       setServerError(`${appError.title}. ${appError.message}`)
-      toast.error(appError.title, appError.message)
     } finally {
       setSubmitting(false)
     }
@@ -108,12 +144,10 @@ export function EditProfileModal({ user, open, onClose, onSaved }: EditProfileMo
     try {
       const updated = await usersApi.patchMe(operations)
       onSaved(updated)
-      toast.success(removeTarget === 'photo' ? 'Foto quitada' : 'Descripción quitada')
       setRemoveTarget(null)
     } catch (error) {
       const appError = toAppError(error)
       setServerError(`${appError.title}. ${appError.message}`)
-      toast.error(appError.title, appError.message)
       setRemoveTarget(null)
     } finally {
       setRemoving(false)
@@ -131,6 +165,7 @@ export function EditProfileModal({ user, open, onClose, onSaved }: EditProfileMo
         title="Editar perfil"
         description="Actualizá tu nombre, foto y descripción de cazador."
         size="md"
+        preventClose={submitting || removing}
         footer={
           <>
             <Button variant="ghost" size="sm" onClick={onClose} disabled={submitting || removing}>
@@ -151,9 +186,12 @@ export function EditProfileModal({ user, open, onClose, onSaved }: EditProfileMo
         <form id="edit-profile-form" onSubmit={handleSubmit} noValidate className="space-y-4">
           <Input
             label="Nombre de cazador"
+            name="name"
             autoComplete="username"
+            data-autofocus
             value={form.name}
             onChange={(event) => update('name', event.target.value)}
+            onBlur={() => handleBlur('name')}
             error={errors.name || undefined}
             maxLength={64}
             required
@@ -161,20 +199,25 @@ export function EditProfileModal({ user, open, onClose, onSaved }: EditProfileMo
 
           <Textarea
             label="Descripción"
+            name="description"
             hint="Hasta 255 caracteres"
             value={form.description}
             onChange={(event) => update('description', event.target.value)}
+            onBlur={() => handleBlur('description')}
             error={errors.description || undefined}
             maxLength={255}
           />
 
           <Input
             label="Foto (URL)"
+            name="photoUrl"
             type="url"
+            autoComplete="url"
             placeholder="https://example.com/foto.jpg"
             hint="URL http o https"
             value={form.photoUrl}
             onChange={(event) => update('photoUrl', event.target.value)}
+            onBlur={() => handleBlur('photoUrl')}
             error={errors.photoUrl || undefined}
             maxLength={512}
           />
