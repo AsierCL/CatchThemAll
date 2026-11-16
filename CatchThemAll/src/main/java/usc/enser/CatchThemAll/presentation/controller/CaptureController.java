@@ -24,6 +24,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import usc.enser.CatchThemAll.exception.ApiException;
 import usc.enser.CatchThemAll.presentation.dto.CaptureResponse;
 import usc.enser.CatchThemAll.presentation.dto.ErrorDTO;
 import usc.enser.CatchThemAll.service.interfaces.ICurrentUserService;
@@ -148,9 +149,20 @@ public class CaptureController {
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public CompletableFuture<ResponseEntity<Void>> create(
             @RequestPart("image") MultipartFile image,
-            @RequestPart("name") @NotBlank @NotNull String name) throws IOException {
+            @RequestPart(value = "data", required = false) String data,
+            @RequestPart(value = "name", required = false) String name) throws IOException {
 
-        return captureService.create(image, name)
+        if (image == null || image.isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "image is required");
+        }
+
+        // La documentacion usa `data`; se acepta `name` para no romper clientes viejos.
+        String famousName = (data != null && !data.isBlank()) ? data : name;
+        if (famousName == null || famousName.isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "data is required");
+        }
+
+        return captureService.create(image, famousName.trim())
                 .thenApply(response ->
                         ResponseEntity.status(HttpStatus.CREATED).build()
                 );
