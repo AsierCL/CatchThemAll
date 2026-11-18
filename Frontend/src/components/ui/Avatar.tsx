@@ -26,15 +26,15 @@ function paletteFor(seed: string): string {
 
 interface AvatarProps {
   name: string
-  photoUrl?: string
+  photoUrl?: string | null
   size?: AvatarSize
   className?: string
   loading?: 'lazy' | 'eager'
 }
 
 /**
- * Retrato con marco duro. Si no hay `photoUrl` (las vistas `Basic` no la traen)
- * se muestra un bloque de iniciales con color estable por nombre.
+ * Retrato con marco duro. `photoUrl` viaja en la vista `Basic` y puede ser `null`;
+ * en ese caso se muestra un bloque de iniciales con color estable por nombre.
  */
 export function Avatar({ name, photoUrl, size = 'md', className, loading = 'lazy' }: AvatarProps) {
   const base = cx('shrink-0 border-2 object-cover', SIZES[size], className)

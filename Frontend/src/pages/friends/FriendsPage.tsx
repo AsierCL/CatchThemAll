@@ -86,13 +86,15 @@ export function FriendsPage() {
   async function handleAdd(friend: UserResponse) {
     setAddingId(friend.userId)
     try {
-      const added = await usersApi.addFriend(currentUser.userId, friend.userId)
+      await usersApi.addFriend(currentUser.userId, friend.userId)
+      // La amistad la fija el backend; la fila se arma con el usuario que ya tenemos,
+      // no con el cuerpo de la respuesta.
       friends.setData((current) => {
         const list = current ?? []
-        if (list.some((entry) => entry.userId === added.userId)) return list
-        return [...list, added]
+        if (list.some((entry) => entry.userId === friend.userId)) return list
+        return [...list, friend]
       })
-      toast.success('Amistad creada', `${added.name} ya está en tu lista de amigos.`)
+      toast.success('Amistad creada', `${friend.name} ya está en tu lista de amigos.`)
     } catch (error) {
       toast.error('No se pudo agregar', toAppError(error).message)
     } finally {
