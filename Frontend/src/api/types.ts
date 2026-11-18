@@ -1,7 +1,7 @@
 /**
  * Tipos derivados de `docs/openapi.json` (OpenAPI 3.1).
- * Los enums viajan siempre en minusculas; las vistas `Basic` no traen
- * `photoUrl` ni `description`, y las `Full` si.
+ * Los enums viajan siempre en minusculas; la vista `Basic` trae `photoUrl` (puede ser
+ * nula) y no `description`, que es exclusiva de `Full`.
  */
 
 export type FamousCategory = 'legendary' | 'epic' | 'rare' | 'common'
@@ -25,7 +25,8 @@ export interface UserResponse {
   score: number
   captureCount: number
   friendIds: string[]
-  photoUrl?: string
+  /** URL de la foto de perfil. Puede ser `null`: ahi `Avatar` cae a las iniciales. */
+  photoUrl: string | null
   description?: string
 }
 

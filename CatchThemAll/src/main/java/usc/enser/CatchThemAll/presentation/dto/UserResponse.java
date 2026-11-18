@@ -17,10 +17,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(
         name = "UserResponse",
         description = """
-                Perfil de usuario. Incluye siempre `userId`, `name`, `score`, `captureCount` y `friendIds`;
-                `photoUrl` y `description` aparecen solo en las respuestas que usan la vista completa
+                Perfil de usuario. Incluye siempre `userId`, `name`, `photoUrl`, `score`, `captureCount` y
+                `friendIds`; `description` aparece solo en las respuestas que usan la vista completa
                 (`GET /users/{id}/full`, `GET /users/me`, `PUT`/`PATCH /users/me` y
-                `GET /users/{id}/friends/{friendId}`).""")
+                `GET /users/{id}/friends/{friendId}`). `photoUrl` puede ser nula.""")
 public record UserResponse(
 
         @Schema(description = "Identificador del usuario.", example = "3f5c1c1e-6a7b-4d8e-9f10-2b3c4d5e6f70")
@@ -32,9 +32,10 @@ public record UserResponse(
         String name,
 
         @Schema(
-                description = "URL de la foto de perfil. Solo en la vista completa.",
+                description = "URL de la foto de perfil. Puede ser nula. Viaja en las dos vistas.",
+                types = {"string", "null"},
                 example = "https://cdn.example.com/users/ada.jpg")
-        @JsonView(Full.class)
+        @JsonView(Basic.class)
         String photoUrl,
 
         @Schema(

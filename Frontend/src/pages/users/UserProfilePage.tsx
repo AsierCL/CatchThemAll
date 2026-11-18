@@ -54,9 +54,12 @@ export function UserProfilePage() {
     if (!me) return
     setAdding(true)
     try {
-      const added = await usersApi.addFriend(me.userId, profile.userId)
-      result.setData((current) => (current ? { profile: added, isFriend: true } : current))
-      toast.success('Amistad creada', `Ahora sos amigo de ${added.name}.`)
+      await usersApi.addFriend(me.userId, profile.userId)
+      // El perfil ya cargado es la vista completa; la respuesta de la amistad es la
+      // basica y no trae `description`, asi que se conserva el perfil y solo se marca
+      // la amistad.
+      result.setData((current) => (current ? { profile: current.profile, isFriend: true } : current))
+      toast.success('Amistad creada', `Ahora sos amigo de ${profile.name}.`)
     } catch (error) {
       toast.error('No se pudo agregar', toAppError(error).message)
     } finally {

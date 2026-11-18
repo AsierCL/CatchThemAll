@@ -161,12 +161,13 @@ public class UserServiceImpl implements IUserService {
         User user = getOrThrow(userId);
         User friend = getOrThrow(friendId);
         if (user.getFriends().contains(friend)) {
-            return toResponse(user);
+            return toResponse(friend);
         }
         user.getFriends().add(friend);
         friend.getFriends().add(user);
         userRepository.save(friend);
-        return toResponse(userRepository.save(user));
+        userRepository.save(user);
+        return toResponse(friend);
     }
 
     @Override
