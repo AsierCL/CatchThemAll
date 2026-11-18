@@ -57,7 +57,7 @@ public class UserController {
             summary = "Listar usuarios",
             description = """
                     Devuelve todos los usuarios, o los que contienen el texto indicado en el nombre.
-                    Las respuestas usan la vista basica: sin `photoUrl` ni `description`.
+                    Las respuestas usan la vista basica: incluyen `photoUrl` y no `description`.
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Listado de usuarios"),
@@ -281,23 +281,30 @@ public class UserController {
             operationId = "addFriend",
             summary = "Agregar una amistad",
             description = """
-                    Crea la amistad bidireccional. Si ya existia, devuelve el usuario sin cambios y con
-                    `200`. No se permite agregarse a uno mismo.
-                    """)
+                    Crea la amistad bidireccional en la lista del usuario autenticado. El `{id}` del path
+                    tiene que coincidir con el usuario del token. Si la amistad ya existia, la respuesta es
+                    la misma y no cambia nada. No se permite agregarse a uno mismo.
+
+                    Devuelve el amigo agregado, no el usuario autenticado.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Amistad creada o ya existente"),
+            @ApiResponse(responseCode = "200", description = "Amistad creada o ya existente: devuelve el amigo agregado"),
             @ApiResponse(responseCode = "400", description = "Se intento agregar a uno mismo o el cuerpo es invalido",
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
-            @ApiResponse(responseCode = "404", description = "Alguno de los dos usuarios no existe",
+            @ApiResponse(responseCode = "401", description = "Falta el token o es invalido",
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
-            @ApiResponse(responseCode = "500", description = "Error inesperado al validar el cuerpo",
+            @ApiResponse(responseCode = "403", description = "El `{id}` del path no es el usuario del token",
+                    content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Alguno de los dos usuarios no existe",
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class)))
     })
     @PostMapping("/{id}/friends")
+    @JsonView(UserResponse.Basic.class)
     public UserResponse addFriend(
             @Parameter(description = "Identificador del usuario", required = true) @PathVariable UUID id,
             @RequestBody @Valid FriendRequest request) {
-        return userService.addFriend(id, request.friendId());
+        return userService.addFriend(requireCurrentUser(id), request.friendId());
     }
 
     @Operation(
@@ -306,9 +313,6 @@ public class UserController {
             description = """
                     Elimina la amistad bidireccional. Solo se pueden quitar amistades propias: el `{id}`
                     del path tiene que coincidir con el usuario del token.
-
-                    > El rechazo por propiedad todavia devuelve `500` en lugar de `403`. Ver `TODO.md`
-                    > en la raiz del repositorio.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
@@ -317,22 +321,29 @@ public class UserController {
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
             @ApiResponse(responseCode = "401", description = "Falta el token o es invalido",
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
-            @ApiResponse(responseCode = "404", description = "La amistad no existe",
+            @ApiResponse(responseCode = "403", description = "El `{id}` del path no es el usuario del token",
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class))),
-            @ApiResponse(responseCode = "500", description = "El `{id}` no coincide con el usuario del token",
+            @ApiResponse(responseCode = "404", description = "La amistad no existe",
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class)))
     })
     @DeleteMapping("/{id}/friends/{friendId}")
     public ResponseEntity<Void> removeFriend(
             @Parameter(description = "Identificador del usuario", required = true) @PathVariable UUID id,
-            @Parameter(description = "Identificador del amigo", required = true) @PathVariable UUID friendId) throws AccessDeniedException {
-
-        if(currentUserService.getCurrentUserId().equals(id)){
-            userService.removeFriend(id, friendId);
-        }else {
-            throw new AccessDeniedException("No puedes subir capturas por otro usuario");
-        }
+            @Parameter(description = "Identificador del amigo", required = true) @PathVariable UUID friendId) {
+        userService.removeFriend(requireCurrentUser(id), friendId);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Devuelve el usuario del token y rechaza cualquier intento de operar sobre la lista de otro.
+     * La amistad siempre la crea o la borra el usuario autenticado, nunca el `{id}` del path.
+     */
+    private UUID requireCurrentUser(UUID ownerId) {
+        UUID currentUserId = currentUserService.getCurrentUserId();
+        if (!currentUserId.equals(ownerId)) {
+            throw new AccessDeniedException("you cannot modify another user's friends");
+        }
+        return currentUserId;
     }
 
 }
