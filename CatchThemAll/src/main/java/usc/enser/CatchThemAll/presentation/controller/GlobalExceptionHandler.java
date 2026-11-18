@@ -89,8 +89,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler({
-            AccessDeniedException.class,
-            java.nio.file.AccessDeniedException.class
+            AccessDeniedException.class
     })
     public ResponseEntity<ErrorDTO> handleAccessDenied(AccessDeniedException exception, HttpServletRequest request) {
         return build(HttpStatus.FORBIDDEN, "access denied", request, List.of());

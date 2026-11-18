@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.multipart.MultipartFile;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -100,7 +101,7 @@ public class CaptureController {
             @Parameter(description = "Identificador del usuario dueno de la captura", required = true)
             @PathVariable UUID id,
             @RequestPart("image") MultipartFile image,
-            @RequestPart("name") @NotBlank @NotNull String name) throws IOException{
+            @RequestPart("name") @NotBlank @NotNull String name) throws IOException, HandlerMethodValidationException {
 
         if(currentUserService.getCurrentUserId().equals(id)){
             return captureService.identify(id,image,name);

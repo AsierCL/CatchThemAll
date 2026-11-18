@@ -1,6 +1,5 @@
 package usc.enser.CatchThemAll.presentation.controller;
 
-import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.UUID;
 
@@ -8,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -173,12 +173,8 @@ public class UserController {
     })
     @PutMapping("/me")
     @JsonView(UserResponse.Full.class)
-    public UserResponse putUpdate(@Parameter(hidden = true) UUID id, @RequestBody @Valid UserPutUpdateRequest request) throws AccessDeniedException {
-        if(currentUserService.getCurrentUserId().equals(id)){
-            return userService.putUpdate(id, request);
-        }else {
-            throw new AccessDeniedException("No puedes modificar los datos de otro usuario");
-        }
+    public UserResponse putUpdate(@RequestBody @Valid UserPutUpdateRequest request){
+        return userService.putUpdate(currentUserService.getCurrentUserId(), request);
     }
 
     @Operation(
@@ -217,12 +213,8 @@ public class UserController {
             consumes = "application/json-patch+json"
     )
     @JsonView(UserResponse.Full.class)
-    public UserResponse patchUpdate(@Parameter(hidden = true) UUID id, @RequestBody JsonNode request) throws AccessDeniedException {
-        if(currentUserService.getCurrentUserId().equals(id)){
-            return userService.patchUpdate(id, request);
-        }else {
-            throw new AccessDeniedException("No puedes modificar los datos de otro usuario");
-        }
+    public UserResponse patchUpdate(@RequestBody JsonNode request){
+        return userService.patchUpdate(currentUserService.getCurrentUserId(), request);
     }
 
     @Operation(
@@ -239,12 +231,9 @@ public class UserController {
             @ApiResponse(responseCode = "404", description = "El usuario no existe",
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class)))
     })
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@Parameter(description = "Identificador del usuario", required = true) @PathVariable UUID id) throws AccessDeniedException {
-        if(!currentUserService.getCurrentUserId().equals(id)){
-            throw new AccessDeniedException("No puedes eliminar a otro usuario");
-        }
-        userService.delete(id);
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> delete() throws AccessDeniedException {
+        userService.delete(currentUserService.getCurrentUserId());
         return ResponseEntity.noContent().build();
     }
 
