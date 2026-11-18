@@ -3,6 +3,7 @@ package usc.enser.CatchThemAll.persistence.repositories;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.sql.Timestamp;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -38,6 +39,10 @@ public interface CaptureRepository extends JpaRepository<Captures, UUID>{
     List<Captures> findAllByUserOrderByTimestampDesc(User user);
 
     Optional<Captures> findByCaptureIdAndUser(UUID captureId, User user);
+
+    boolean existsByFamousAndUser(Famous famous, User user);
+
+    boolean existsByFamousAndUserAndTimestampBefore(Famous famous, User user, Timestamp timestamp);
 
     @Query("""
         SELECT c

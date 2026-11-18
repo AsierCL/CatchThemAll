@@ -64,12 +64,13 @@ docker compose up -d postgres     # Postgres + pgvector en localhost:7777
 ```
 
 El servicio de reconocimiento facial es opcional para explorar la documentación: los endpoints de
-capturas devuelven `503` mientras no esté escuchando en `localhost:9090`.
+capturas devuelven `503` mientras no esté escuchando en `localhost:9090`. Para levantarlo a mano:
 
 ```bash
 cd FacialRecognition
-pip install -r requirements.txt
-python -m capture_service.server
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+PYTHONPATH=src .venv/bin/python -m capture_service.server
 ```
 
 ### Arranque rápido de todo el stack
@@ -80,12 +81,34 @@ Desde la raíz del repo:
 ./run.sh
 ```
 
-Levanta Postgres, la API y Vite escuchando en `0.0.0.0`, así que también podés abrir la web desde el
-teléfono con `http://<IP-de-la-máquina>:5173`. Los logs quedan en `.run/backend.log` y
-`.run/frontend.log`; `Ctrl+C` detiene API y frontend, y Postgres sigue corriendo. La cámara requiere
-HTTPS o `localhost`, por lo que desde la IP de la LAN solo funciona la subida de archivo.
+Levanta Postgres, el microservicio de reconocimiento facial (creando el venv la primera vez), la API y
+Vite escuchando en `0.0.0.0`, así que también podés abrir la web desde el teléfono con
+`http://<IP-de-la-máquina>:5173`. Los logs quedan en `.run/backend.log`, `.run/frontend.log` y
+`.run/facial.log`; `Ctrl+C` detiene API, frontend y reconocimiento, y Postgres sigue corriendo. La cámara
+requiere HTTPS o `localhost`, por lo que desde la IP de la LAN solo funciona la subida de archivo.
 
-Puertos configurables con `BACKEND_PORT` y `FRONTEND_PORT`; el host con `BIND_HOST`.
+Puertos configurables con `BACKEND_PORT`, `FRONTEND_PORT` y `FACIAL_PORT`; el host con `BIND_HOST`.
+
+### Fotos privadas de famosos
+
+Las fotos de referencia no se versionan: van en `private/famosos/<Nombre>/` (por ejemplo,
+`private/famosos/Asier/`) y `private/` está en `.gitignore`. `run.sh`:
+
+1. Arranca el servicio de reconocimiento facial y crea la extensión `vector` y la tabla `face_embeddings`.
+2. Da de alta al famoso en el catálogo si no existe (categoría `Common` y tipo `Meme` por defecto).
+3. Carga todas las fotos de la carpeta si el hash de los archivos cambió, y guarda el hash en
+   `private/famosos/<Nombre>/.embeddings.sha256` para no repetir el trabajo.
+
+Para cambiar la rareza o el tipo de un famoso, agregá un archivo `private/famosos/<Nombre>/.meta`:
+
+```
+category=Rare
+type=Actor
+```
+
+La primera ejecución descarga el modelo `buffalo_l` de InsightFace y puede tardar varios minutos. Si
+una foto no contiene exactamente una cara, la carga falla y el script muestra el archivo problemático.
+
 
 ## Pendientes conocidos
 

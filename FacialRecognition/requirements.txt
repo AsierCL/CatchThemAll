@@ -6,6 +6,6 @@ typing_extensions==4.16.0
 insightface==2.1
 onnxruntime==1.31.0
 opencv-python==5.0.0.93
-numpy==2.5.4
+numpy==2.4.6
 psycopg2-binary==2.9.13
 pgvector==0.5.1

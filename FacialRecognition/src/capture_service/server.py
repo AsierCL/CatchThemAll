@@ -20,10 +20,12 @@ def server():
             port="7777"
     )
     conexion.autocommit = True
-    register_vector(conexion)
     cursor = conexion.cursor()
 
+    # La extension tiene que existir antes de registrar el tipo `vector` en
+    # psycopg2; si no, register_vector falla con "vector type not found".
     cursor.execute("CREATE EXTENSION IF NOT EXISTS vector")
+    register_vector(conexion)
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS face_embeddings (
@@ -31,6 +33,10 @@ def server():
             name TEXT NOT NULL,
             embedding VECTOR(512)
         )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS face_embeddings_name_idx
+        ON face_embeddings (name)
     """)
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
@@ -40,7 +46,7 @@ def server():
     )
     listen_addr = "[::]:9090"
     server.add_insecure_port(listen_addr)
-    print(f"Starting server on {listen_addr}")
+    print(f"Starting server on {listen_addr}", flush=True)
     server.start()
     server.wait_for_termination()
     cursor.close()

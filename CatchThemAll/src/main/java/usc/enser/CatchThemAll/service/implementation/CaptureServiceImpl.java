@@ -92,11 +92,12 @@ public class CaptureServiceImpl implements ICaptureService {
                     capture.setUser(user);
                     capture.setFamous(famous);
                     capture.setTimestamp(new Timestamp(System.currentTimeMillis()));
+                    capture.setSimilarity(identifyResponse.getSimilarity());
                     //capture.setPhotoUrl();
-                    boolean captured = captureRepository.findByCaptureFamousAndUser(famous, user).isPresent();
+                    boolean captured = captureRepository.existsByFamousAndUser(famous, user);
                     Captures savedCapture = captureRepository.save(capture);
                     return new CaptureResponse(savedCapture.getCaptureId(),famous.getFamousId(),
-                            famous.getName(), identifyResponse.getSimilarity(),captured,savedCapture.getTimestamp());
+                            famous.getName(), savedCapture.getSimilarity(), captured, savedCapture.getTimestamp());
                 },
                 executor);
 
@@ -189,12 +190,15 @@ public class CaptureServiceImpl implements ICaptureService {
 
     private CaptureResponse toHistoryResponse(Captures capture) {
         Double similarity = capture.getSimilarity();
+        boolean repeated = capture.getTimestamp() != null &&
+                captureRepository.existsByFamousAndUserAndTimestampBefore(
+                        capture.getFamous(), capture.getUser(), capture.getTimestamp());
         return new CaptureResponse(
                 capture.getCaptureId(),
                 capture.getFamous().getFamousId(),
                 capture.getFamous().getName(),
                 similarity == null ? 0.0 : similarity,
-                true,
+                repeated,
                 capture.getTimestamp());
     }
 

@@ -20,6 +20,7 @@ import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import usc.enser.CatchThemAll.exception.ApiException;
 import usc.enser.CatchThemAll.persistence.entities.RefreshToken;
@@ -59,6 +60,7 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     @Override
+    @Transactional(noRollbackFor = ApiException.class)
     public TokenResponse login(UserLogin request) {
 
         Authentication authentication;
@@ -73,6 +75,7 @@ public class AuthServiceImpl implements IAuthService {
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "invalid credentials"));
 
         refreshTokenRepository.deleteByUser_UserId(user.getUserId());
+        refreshTokenRepository.flush();
 
         RefreshToken refreshToken = refreshTokenService.create(user.getUserId());
         return generateToken(user, refreshToken.getToken());
@@ -103,6 +106,8 @@ public class AuthServiceImpl implements IAuthService {
         return generateToken(savedUser,refreshToken.getToken());
     }
 
+    @Override
+    @Transactional(noRollbackFor = ApiException.class)
     public TokenResponse refresh(RefreshRequest request) {
 
         String requestToken = request.refreshToken();
@@ -116,6 +121,7 @@ public class AuthServiceImpl implements IAuthService {
 
         if (refreshTokenService.isExpired(token)) {
             refreshTokenRepository.delete(token);
+            refreshTokenRepository.flush();
 
             throw new ApiException(
                     HttpStatus.UNAUTHORIZED,
@@ -124,6 +130,7 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         refreshTokenRepository.delete(token);
+        refreshTokenRepository.flush();
 
         RefreshToken newRefreshToken = refreshTokenService.create(token.getUser().getUserId());
 

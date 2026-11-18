@@ -1,2 +1,12 @@
 # Logs del script de arranque
 .run/
+
+# Fotos privadas de famosos (no se versionan)
+private/
+
+# Entorno Python del reconocimiento facial
+FacialRecognition/.venv/
+
+# Bytecode de Python (los .pyc viejos siguen versionados; ver TODO.md)
+__pycache__/
+*.py[cod]

@@ -35,7 +35,7 @@ public interface UserRepository extends JpaRepository<User, UUID>{
     @Modifying
     @Query("""
            UPDATE User u
-           SET u.score = u.score + :points
+           SET u.score = COALESCE(u.score, 0) + :points
            WHERE u.userId = :uuid
            """)
     int updateScore (@Param("uuid") UUID id, @Param("points") int points);

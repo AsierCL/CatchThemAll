@@ -44,6 +44,7 @@ public class RefreshTokenService implements IRefreshTokenService {
                 .issuer("CatchThemAll")
                 .subject(user.getUserId().toString())
                 .claim("type", "refresh")
+                .claim("jti", UUID.randomUUID().toString())
                 .issuedAt(now)
                 .expiresAt(now.plusMillis(refreshTokenDuration))
                 .build();
