@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { toAppError } from '../../api/errors'
 import { usersApi } from '../../api/endpoints'
-import type { UserResponse } from '../../api/types'
+import type { UserResponse, UserResponseFull } from '../../api/types'
 import { useAuth } from '../../auth/AuthContext'
 import { Avatar } from '../../components/ui/Avatar'
 import { Badge } from '../../components/ui/Badge'
@@ -27,19 +27,19 @@ export function UserProfilePage() {
   const toast = useToast()
   const [adding, setAdding] = useState(false)
 
-  const result = useAsync(() => loadProfile(userId, me), [userId, me?.userId])
+  const result = useAsync((signal) => loadProfile(userId, me, signal), [userId, me?.userId])
 
   usePageTitle(result.data ? `${result.data.profile.name} · Perfil` : 'Perfil de cazador')
 
   if (result.loading) {
     return (
-      <div aria-live="polite" aria-busy="true">
+      <div aria-busy="true">
         <LoadingBlock label="Cargando perfil" />
       </div>
     )
   }
 
-  if (result.error) {
+  if (result.error && !result.data) {
     return <ErrorState error={result.error} onRetry={result.reload} />
   }
 
@@ -48,6 +48,7 @@ export function UserProfilePage() {
   }
 
   const { profile, isFriend } = result.data
+  const description = 'description' in profile ? profile.description : null
   const isOwnProfile = me?.userId === profile.userId
 
   async function handleAddFriend() {
@@ -71,6 +72,8 @@ export function UserProfilePage() {
     <div className="space-y-6">
       <p className="label-pixel">Perfil de cazador</p>
 
+      {result.error && <ErrorState error={result.error} onRetry={result.reload} />}
+
       <Panel elevation="raised">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
           <Avatar name={profile.name} photoUrl={profile.photoUrl} size="lg" className="mx-auto sm:mx-0" loading="eager" />
@@ -81,8 +84,8 @@ export function UserProfilePage() {
                 <h1 className="font-pixel text-lg text-ink-900 sm:text-xl">{profile.name}</h1>
                 {isFriend && <Badge tone="brand">Ya son amigos</Badge>}
               </div>
-              {profile.description && (
-                <p className="max-w-2xl text-sm leading-relaxed text-ink-700">{profile.description}</p>
+              {description && (
+                <p className="max-w-2xl text-sm leading-relaxed text-ink-700">{description}</p>
               )}
             </div>
 
@@ -131,23 +134,27 @@ export function UserProfilePage() {
   )
 }
 
-async function loadProfile(userId: string | undefined, me: UserResponse | null): Promise<ProfileResult> {
+async function loadProfile(
+  userId: string | undefined,
+  me: UserResponseFull | null,
+  signal: AbortSignal,
+): Promise<ProfileResult> {
   if (!userId) throw new Error('Falta el identificador del usuario.')
 
   if (me) {
     try {
       // Vista completa solo si la amistad existe; en otro caso devuelve 404.
-      const profile = await usersApi.friendProfile(me.userId, userId)
+      const profile = await usersApi.friendProfile(me.userId, userId, signal)
       return { profile, isFriend: true }
     } catch (error) {
       if (toAppError(error).status === 404) {
-        const profile = await usersApi.get(userId)
+        const profile = await usersApi.get(userId, signal)
         return { profile, isFriend: false }
       }
       throw error
     }
   }
 
-  const profile = await usersApi.get(userId)
+  const profile = await usersApi.get(userId, signal)
   return { profile, isFriend: false }
 }

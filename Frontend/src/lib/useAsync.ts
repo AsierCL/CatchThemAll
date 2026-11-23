@@ -9,10 +9,11 @@ export interface AsyncState<T> {
 
 /**
  * Carga asincronica minima (sin libreria de estado): mantiene los datos
- * anteriores mientras recarga, ignora respuestas de ejecuciones viejas y expone
- * `reload` para reintentar a mano.
+ * anteriores mientras recarga o si la recarga falla, ignora respuestas de
+ * ejecuciones viejas, cancela la peticion al desmontar y expone `reload` para
+ * reintentar a mano.
  */
-export function useAsync<T>(loader: () => Promise<T>, deps: unknown[]) {
+export function useAsync<T>(loader: (signal: AbortSignal) => Promise<T>, deps: unknown[]) {
   const [state, setState] = useState<AsyncState<T>>({ data: null, error: null, loading: true })
   const [nonce, setNonce] = useState(0)
   const loaderRef = useRef(loader)
@@ -20,19 +21,22 @@ export function useAsync<T>(loader: () => Promise<T>, deps: unknown[]) {
 
   useEffect(() => {
     let active = true
+    const controller = new AbortController()
     setState((previous) => ({ data: previous.data, error: null, loading: true }))
 
-    loaderRef.current().then(
+    loaderRef.current(controller.signal).then(
       (data) => {
         if (active) setState({ data, error: null, loading: false })
       },
       (error: unknown) => {
-        if (active) setState({ data: null, error: toAppError(error), loading: false })
+        // Un error de recarga no borra lo que el usuario ya estaba viendo.
+        if (active) setState((previous) => ({ data: previous.data, error: toAppError(error), loading: false }))
       },
     )
 
     return () => {
       active = false
+      controller.abort()
     }
     // Las dependencias las decide cada pantalla; `nonce` fuerza el reintento.
     // eslint-disable-next-line react-hooks/exhaustive-deps

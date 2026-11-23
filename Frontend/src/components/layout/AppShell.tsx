@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom'
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
+import { LoadingBlock } from '../ui/Feedback'
 import { Footer } from './Footer'
 import { MobileNav } from './MobileNav'
 import { Navbar } from './Navbar'
@@ -45,7 +46,9 @@ export function AppShell() {
         tabIndex={-1}
         className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 outline-none sm:py-10"
       >
-        <Outlet />
+        <Suspense fallback={<LoadingBlock label="Cargando pantalla" />}>
+          <Outlet />
+        </Suspense>
       </main>
       <Footer />
       <MobileNav />

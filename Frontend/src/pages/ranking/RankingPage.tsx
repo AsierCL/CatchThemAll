@@ -1,15 +1,17 @@
 import { Link } from 'react-router-dom'
 import { usersApi } from '../../api/endpoints'
-import type { UserResponse } from '../../api/types'
+import type { UserResponseBasic } from '../../api/types'
 import { useAuth } from '../../auth/AuthContext'
 import { Avatar } from '../../components/ui/Avatar'
 import { Badge } from '../../components/ui/Badge'
 import { EmptyState, ErrorState, LoadingGrid } from '../../components/ui/Feedback'
+import { Pagination } from '../../components/ui/Pagination'
 import { Panel } from '../../components/ui/Panel'
 import { cx } from '../../lib/cx'
 import { formatNumber } from '../../lib/format'
 import { useAsync } from '../../lib/useAsync'
 import { usePageTitle } from '../../lib/usePageTitle'
+import { usePagination } from '../../lib/usePagination'
 
 type PodiumAccent = 'legendary' | 'rare' | 'common'
 
@@ -28,42 +30,42 @@ export function RankingPage() {
   usePageTitle('Ranking de cazadores')
 
   const { user } = useAuth()
-  const ranking = useAsync(() => usersApi.ranking(), [])
+  const ranking = useAsync((signal) => usersApi.ranking(signal), [])
 
   const currentUserId = user?.userId
+  const entries = ranking.data ?? []
+  const restPagination = usePagination(entries.slice(3), 20)
 
-  if (ranking.loading) {
+  if (ranking.loading && !ranking.data) {
     return (
-      <div className="space-y-6" aria-live="polite" aria-busy="true">
+      <div className="space-y-6" aria-busy="true">
         <PageHeader />
-        <LoadingGrid count={6} />
+        <LoadingGrid count={6} label="Cargando ranking" />
       </div>
     )
   }
 
-  if (ranking.error) {
+  if (ranking.error && !ranking.data) {
     return (
-      <div className="space-y-6" aria-live="polite">
+      <div className="space-y-6">
         <PageHeader />
         <ErrorState error={ranking.error} onRetry={ranking.reload} />
       </div>
     )
   }
 
-  const entries = ranking.data ?? []
-
   return (
     <div className="space-y-6">
       <PageHeader />
 
+      {ranking.error && <ErrorState error={ranking.error} onRetry={ranking.reload} />}
+
       {entries.length === 0 ? (
-        <div aria-live="polite">
-          <EmptyState
-            icon="trophy"
-            title="Todavía no hay cazadores"
-            description="Cuando alguien capture a su primer famoso va a aparecer acá, ordenado por puntaje."
-          />
-        </div>
+        <EmptyState
+          icon="trophy"
+          title="Todavía no hay cazadores"
+          description="Cuando alguien capture a su primer famoso va a aparecer acá, ordenado por puntaje."
+        />
       ) : (
         <>
           <ol className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4" aria-label="Podio">
@@ -79,29 +81,39 @@ export function RankingPage() {
           </ol>
 
           {entries.length > 3 && (
-            <Panel padded={false}>
-              <div
-                className={cx(
-                  'grid items-center gap-2 border-b-2 border-l-2 border-paper-300 border-l-transparent px-3 py-2 sm:px-4',
-                  ROW_GRID,
-                )}
-              >
-                <span className="label-pixel">#</span>
-                <span className="label-pixel">Cazador</span>
-                <span className="label-pixel text-right">Puntaje</span>
-                <span className="label-pixel hidden text-right sm:block">Capturas</span>
-              </div>
-              <ol aria-label="Resto del ranking">
-                {entries.slice(3).map((entry, index) => (
-                  <RankingRow
-                    key={entry.userId}
-                    position={index + 4}
-                    entry={entry}
-                    isCurrent={entry.userId === currentUserId}
-                  />
-                ))}
-              </ol>
-            </Panel>
+            <>
+              <Panel padded={false}>
+                <div
+                  className={cx(
+                    'grid items-center gap-2 border-b-2 border-l-2 border-paper-300 border-l-transparent px-3 py-2 sm:px-4',
+                    ROW_GRID,
+                  )}
+                >
+                  <span className="label-pixel">#</span>
+                  <span className="label-pixel">Cazador</span>
+                  <span className="label-pixel text-right">Puntaje</span>
+                  <span className="label-pixel hidden text-right sm:block">Capturas</span>
+                </div>
+                <ol aria-label="Resto del ranking">
+                  {restPagination.pageItems.map((entry, index) => (
+                    <RankingRow
+                      key={entry.userId}
+                      position={index + 4 + (restPagination.page - 1) * 20}
+                      entry={entry}
+                      isCurrent={entry.userId === currentUserId}
+                    />
+                  ))}
+                </ol>
+              </Panel>
+              <Pagination
+                page={restPagination.page}
+                pageCount={restPagination.pageCount}
+                total={restPagination.total}
+                pageSize={20}
+                onPageChange={restPagination.setPage}
+                label="Páginas del ranking"
+              />
+            </>
           )}
         </>
       )}
@@ -129,7 +141,7 @@ function PageHeader() {
 interface PodiumCardProps {
   position: number
   accent: PodiumAccent
-  entry: UserResponse
+  entry: UserResponseBasic
   isCurrent: boolean
 }
 
@@ -186,7 +198,7 @@ function PodiumCard({ position, accent, entry, isCurrent }: PodiumCardProps) {
 
 interface RankingRowProps {
   position: number
-  entry: UserResponse
+  entry: UserResponseBasic
   isCurrent: boolean
 }
 

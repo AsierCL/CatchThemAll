@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { cx } from '../../lib/cx'
 import { initials } from '../../lib/format'
 
@@ -38,14 +39,17 @@ interface AvatarProps {
  */
 export function Avatar({ name, photoUrl, size = 'md', className, loading = 'lazy' }: AvatarProps) {
   const base = cx('shrink-0 border-2 object-cover', SIZES[size], className)
+  const [failedPhoto, setFailedPhoto] = useState<string | null>(null)
+  const showPhoto = photoUrl !== null && photoUrl !== undefined && photoUrl !== failedPhoto
 
-  if (photoUrl) {
+  if (showPhoto && photoUrl) {
     return (
       <img
         src={photoUrl}
         alt={`Foto de ${name}`}
         loading={loading}
         decoding="async"
+        onError={() => setFailedPhoto(photoUrl)}
         className={cx(base, 'border-paper-400 bg-paper-100')}
       />
     )
@@ -53,10 +57,11 @@ export function Avatar({ name, photoUrl, size = 'md', className, loading = 'lazy
 
   return (
     <span
-      aria-hidden="true"
+      role="img"
+      aria-label={`Foto de ${name}`}
       className={cx(base, 'inline-flex items-center justify-center font-pixel uppercase', paletteFor(name))}
     >
-      {initials(name)}
+      <span aria-hidden="true">{initials(name)}</span>
     </span>
   )
 }

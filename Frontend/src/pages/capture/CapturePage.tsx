@@ -79,7 +79,7 @@ export function CapturePage() {
   const streamRef = useRef<MediaStream | null>(null)
   const objectUrlRef = useRef<string | null>(null)
 
-  const catalog = useAsync<FamousResponse[]>(() => famousApi.list(), [])
+  const catalog = useAsync<FamousResponse[]>((signal) => famousApi.list({}, signal), [])
   const targetFromUrl = searchParams.get('famoso')
 
   // Preseleccion del famoso cuando se llega desde su ficha (?famoso=<uuid>).
@@ -163,7 +163,7 @@ export function CapturePage() {
     setMode('camera')
 
     if (!window.isSecureContext) {
-      setCameraError('La cámara solo funciona en HTTPS o en localhost. Abrí la app desde localhost:5173.')
+      setCameraError('La cámara necesita un contexto seguro (HTTPS). Si la app no está publicada con HTTPS, subí un archivo en su lugar.')
       return
     }
 

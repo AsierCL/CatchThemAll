@@ -4,7 +4,7 @@ Aplicación web para los usuarios finales de CatchThemAll: la Pokédex de famoso
 sobre la API REST de `docs/openapi.json` —registro, login, catálogo, captura por reconocimiento facial,
 historial propio, ranking, amistades y perfil— sin que nadie tenga que tocar Swagger.
 
-- **Stack:** React 19 + Vite + TypeScript + Tailwind CSS 4 + Axios.
+- **Stack:** React 19 + Vite + TypeScript + Tailwind CSS 4 + Axios. Tests con Vitest y Testing Library.
 - **Estilo:** 8-bit sobrio, inspirado en las Pokédex de consola: papel blanco cálido, rojo de consola para
   acciones y acentos, bordes de 2px, sombras duras y tipografía pixel solo en títulos y etiquetas.
 
@@ -30,7 +30,7 @@ modo demo ni datos mock embebidos.
 ## Por qué hay un proxy
 
 `CatchThemAll/config/SecurityConfig.java` no configura CORS. En lugar de modificar el backend, el servidor de
-desarrollo de Vite hace de proxy: el navegador pide `/api/...` al mismo origen y Vite reescribe a
+Vite (`dev` y `preview`) hace de proxy: el navegador pide `/api/...` al mismo origen y Vite reescribe a
 `http://localhost:8080/...`.
 
 ```
@@ -42,22 +42,53 @@ Variables de entorno:
 
 | Variable | Uso | Default |
 | --- | --- | --- |
-| `VITE_API_PROXY_TARGET` | Destino del proxy **solo en desarrollo** (`vite dev`) | `http://localhost:8080` |
+| `VITE_API_PROXY_TARGET` | Destino del proxy de `vite dev` y `vite preview` | `http://localhost:8080` |
 | `VITE_API_BASE_URL` | Base que usa Axios en el navegador | `/api` |
+| `VITE_API_DOCS_URL` | Enlace opcional a Swagger en el footer | se deduce de una `VITE_API_BASE_URL` absoluta |
 
 Copiá `.env.example` a `.env.local` si tu backend vive en otro puerto. En producción hay dos caminos válidos,
-y el más simple es el que ya usa el desarrollo: servir `dist/` detrás del mismo origen que la API (nginx o
-similar, con `/api` apuntando al backend). La alternativa es habilitar CORS en el backend y definir
-`VITE_API_BASE_URL` con la URL absoluta.
+y el más simple es el que ya usa el desarrollo: servir `dist/` detrás del mismo origen que la API. Por defecto
+el build usa `VITE_API_BASE_URL=/api`, así que el servidor tiene que reescribir `/api/*` hacia el backend
+eliminando el prefijo. Un ejemplo con nginx:
+
+```nginx
+server {
+    listen 80;
+    root /srv/catchthemall;
+    index index.html;
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:8080/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        try_files $uri /index.html;
+    }
+}
+```
+
+`vite preview` usa el mismo proxy `/api` que `vite dev`, así que sirve para probar un build localmente. Un
+servidor estático de producción **no** hereda esa configuración: necesita el reverse proxy de arriba o un build
+con `VITE_API_BASE_URL` absoluta y CORS habilitado en el backend.
 
 ## Scripts
 
 ```bash
 npm run dev      # servidor de desarrollo con proxy
 npm run build    # typecheck (tsc -b) + build de producción en dist/
-npm run preview  # sirve dist/ (sin proxy: necesita CORS o reverse proxy)
+npm run preview  # sirve dist/ con el proxy /api de Vite
 npm run lint     # oxlint
+npm test         # tests unitarios y de componentes (vitest)
 ```
+
+## Tests
+
+La suite usa Vitest, jsdom y Testing Library. Cubre la conservación de datos de `useAsync`, la expiración y
+sincronización entre pestañas de los tokens, la renovación proactiva y los fallos de red del cliente HTTP, el
+fallback accesible del avatar, los hints y errores de los campos y la paginación.
 
 ## Estructura
 
@@ -91,10 +122,15 @@ Rutas:
 
 - `POST /auth/register` y `POST /auth/login` devuelven `token` (JWT de 15 minutos) y `refreshToken` (opaco, 24
   horas, **se rota en cada uso**).
-- El par se guarda en `localStorage` bajo `catchthemall.tokens`.
-- Ante un `401`, un interceptor de Axios renueva el token **una sola vez para todas las peticiones en vuelo**
-  (un refresh concurrente invalidaría el token rotado y cerraría la sesión sin motivo) y reintenta la
-  petición original. Si el refresh falla, se limpian los tokens y la app vuelve al login.
+- El par se guarda en `localStorage` bajo `catchthemall.tokens`, junto con la expiración calculada desde
+  `expiresIn`. El interceptor de Axios renueva el JWT **antes** de que venza, sin esperar un `401`.
+- Ante un `401` también se renueva **una sola vez para todas las peticiones en vuelo** (un refresh concurrente
+  invalidaría el token rotado) y se reintenta la petición original. Web Locks y el evento `storage` coordinan el
+  refresh entre pestañas para que solo una canjee el refresh token.
+- Un timeout o un corte de red al renovar **no** cierra la sesión: se conservan los tokens y se muestra el error
+  de conexión. Solo se limpian si el servidor rechaza el refresh token (`401`/`404`).
+- Las pestañas se sincronizan por `storage`: iniciar sesión, renovar o cerrar sesión en una se refleja en las
+  demás.
 - Al arrancar, si hay tokens se resuelve `GET /users/me`; el resto de las rutas privadas esperan esa
   resolución antes de redirigir.
 
@@ -138,14 +174,15 @@ La versión de escritorio no cambia: las adaptaciones viven detrás de `sm:` / `
 
 - HTML semántico, un solo `h1` por pantalla, `aria-label` en controles sin texto visible y `role="alert"` /
   `aria-live` en errores y toasts.
-- Formularios con `aria-describedby` hacia el error y `aria-invalid` sincronizado; al enviar, el foco va al
-  primer campo inválido.
+- Formularios con `aria-describedby` hacia el hint y el error a la vez, y `aria-invalid` sincronizado; al
+  enviar, el foco va al primer campo inválido.
 - Modal nativo `<dialog>`: top layer, foco atrapado por el navegador, cierre con `Escape`, light dismiss con
   `closedby="any"` y devolución automática del foco. Sin `overflow: hidden` sobre `html`/`body`.
 - Menú móvil con Popover API (`popovertarget` / `popover="auto"`): light dismiss y `Escape` sin handlers
   manuales. Los toasts se pausan si el foco o el puntero están sobre la notificación.
 - Foco visible con contorno mint de 2px en todos los interactivos.
-- Los estados de carga y error siempre tienen texto, no solo color.
+- Los estados de carga y error siempre tienen texto, no solo color. Los esqueletos anuncian la carga con
+  `role="status"` y las listas no se envuelven en regiones vivas para no re-anunciar todo en cada tecla.
 
 ## Limitaciones conocidas del backend
 
@@ -156,7 +193,7 @@ La UI refleja el comportamiento real documentado en `TODO.md`; ninguna de estas 
   muestra el error como cualquier otro. Cuando se arregle el backend, la pantalla funciona sin cambios.
 - `captured` se calcula antes de persistir: `false` significa "primera captura", `true` "ya la tenías". La UI
   lo presenta así, como "Nueva" y "Repetida".
-- `GET /famous` se cachea 24 h, `GET /users/ranking` 1 h y `GET /captures/me` 15 min, sin invalidación por
+- `GET /famous` se cachea 5 min, `GET /users/ranking` 1 h y `GET /captures/me` 15 min, sin invalidación por
   escritura. Cada pantalla afectada lo aclara con una nota discreta en lugar de mostrar datos viejos como
   frescos.
 - `POST /captures/{id}/identify` responde **503** si el microservicio de reconocimiento facial no está

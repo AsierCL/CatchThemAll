@@ -39,7 +39,7 @@ export function FamousDetailPage() {
   const { status } = useAuth()
 
   const { data, error, loading, reload } = useAsync<FamousResponse>(
-    () => famousApi.get(famousId ?? ''),
+    (signal) => famousApi.get(famousId ?? '', signal),
     [famousId],
   )
 

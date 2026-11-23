@@ -57,8 +57,3 @@ export function validateDescription(value: string): string | undefined {
   if (value.length > 255) return 'Máximo 255 caracteres.'
   return undefined
 }
-
-/** Cuenta los errores reales de un mapa de validacion. */
-export function countErrors(errors: FieldErrors): number {
-  return Object.values(errors).filter(Boolean).length
-}
