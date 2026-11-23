@@ -1,21 +1,37 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react'
+import { toAppError } from '../api/errors'
 import { authApi, usersApi } from '../api/endpoints'
 import { onSessionExpired } from '../api/tokens'
-import { clearTokens, getAccessToken, getRefreshToken, saveTokens } from '../api/tokens'
-import type { UserLoginRequest, UserRegisterRequest, UserResponse } from '../api/types'
+import {
+  clearTokens,
+  getAccessToken,
+  getAccessTokenSubject,
+  getRefreshToken,
+  onTokensChanged,
+  saveTokens,
+} from '../api/tokens'
+import type { UserLoginRequest, UserRegisterRequest, UserResponseFull } from '../api/types'
 
 type AuthStatus = 'loading' | 'authenticated' | 'anonymous'
 
 interface AuthContextValue {
   status: AuthStatus
-  user: UserResponse | null
-  login: (credentials: UserLoginRequest) => Promise<UserResponse>
-  register: (payload: UserRegisterRequest) => Promise<UserResponse>
+  user: UserResponseFull | null
+  login: (credentials: UserLoginRequest) => Promise<UserResponseFull>
+  register: (payload: UserRegisterRequest) => Promise<UserResponseFull>
   logout: () => void
   /** Recarga el perfil desde `GET /users/me` (por ejemplo despues de capturar). */
   refreshUser: () => Promise<void>
   /** Aplica un perfil ya devuelto por el backend sin otra ida y vuelta. */
-  setUser: (user: UserResponse) => void
+  setUser: (user: UserResponseFull) => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -24,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>(() =>
     getAccessToken() !== null || getRefreshToken() !== null ? 'loading' : 'anonymous',
   )
-  const [user, setUserState] = useState<UserResponse | null>(null)
+  const [user, setUserState] = useState<UserResponseFull | null>(null)
 
   const logout = useCallback(() => {
     clearTokens()
@@ -41,8 +57,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // El cliente axios avisa cuando el refresh token dejo de servir.
   useEffect(() => onSessionExpired(logout), [logout])
 
+  // Sincronizacion entre pestanas: otra pestana puede iniciar sesion, refrescar
+  // el JWT o cerrar sesion. El evento `storage` actualiza la cache de tokens y
+  // aca se ajusta el estado de autenticacion de esta pestana.
+  useEffect(() => {
+    let sync = 0
+
+    const unsubscribe = onTokensChanged((tokens) => {
+      const currentSync = ++sync
+
+      if (!tokens) {
+        setUserState(null)
+        setStatus('anonymous')
+        return
+      }
+
+      const subject = getAccessTokenSubject()
+      if (user && (!subject || subject === user.userId)) return
+
+      setStatus('loading')
+      usersApi
+        .me()
+        .then((profile) => {
+          if (currentSync !== sync) return
+          setUserState(profile)
+          setStatus('authenticated')
+        })
+        .catch((error: unknown) => {
+          if (currentSync !== sync) return
+          const status = toAppError(error).status
+          if (status === 401 || status === 404) clearTokens()
+          setUserState(null)
+          setStatus('anonymous')
+        })
+    })
+
+    return () => {
+      sync += 1
+      unsubscribe()
+    }
+  }, [user])
+
   // Bootstrapping: si hay tokens guardados se intenta resolver el perfil. Un 401
   // lo maneja el interceptor (refresh) y, si tambien falla, se cierra la sesion.
+  // Un corte de red no borra los tokens: se podra reintentar al recargar.
   useEffect(() => {
     let cancelled = false
 
@@ -58,9 +116,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUserState(profile)
         setStatus('authenticated')
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (cancelled) return
-        clearTokens()
+        const status = toAppError(error).status
+        if (status === 401 || status === 404) clearTokens()
         setUserState(null)
         setStatus('anonymous')
       })
@@ -88,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return profile
   }, [])
 
-  const setUser = useCallback((next: UserResponse) => {
+  const setUser = useCallback((next: UserResponseFull) => {
     setUserState(next)
     setStatus('authenticated')
   }, [])

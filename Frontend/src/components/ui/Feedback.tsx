@@ -19,17 +19,23 @@ export function Spinner({ label = 'Cargando' }: { label?: string }) {
 }
 
 /** Esqueletos con la forma de las tarjetas para que el salto no sea brusco. */
-export function LoadingGrid({ count = 8 }: { count?: number }) {
+export function LoadingGrid({ count = 8, label = 'Cargando contenido' }: { count?: number; label?: string }) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-hidden="true">
-      {Array.from({ length: count }, (_, index) => (
-        <div key={index} className="border-2 border-paper-200 bg-paper-100/60 p-4">
-          <div className="mb-3 h-2 w-10 bg-paper-200" />
-          <div className="mb-2 h-4 w-3/4 bg-paper-200" />
-          <div className="mb-4 h-3 w-1/2 bg-paper-200/70" />
-          <div className="h-3 w-full bg-paper-200/50" />
-        </div>
-      ))}
+    <div role="status">
+      <span className="sr-only">{label}</span>
+      <div
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        aria-hidden="true"
+      >
+        {Array.from({ length: count }, (_, index) => (
+          <div key={index} className="border-2 border-paper-200 bg-paper-100/60 p-4">
+            <div className="mb-3 h-2 w-10 bg-paper-200" />
+            <div className="mb-2 h-4 w-3/4 bg-paper-200" />
+            <div className="mb-4 h-3 w-1/2 bg-paper-200/70" />
+            <div className="h-3 w-full bg-paper-200/50" />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -50,29 +56,31 @@ interface ErrorStateProps {
 
 export function ErrorState({ error, onRetry, className }: ErrorStateProps) {
   return (
-    <Panel tone="muted" className={cx('border-rose-400/40 text-center', className)}>
-      <div className="mx-auto flex max-w-md flex-col items-center gap-3">
-        <span className="border-2 border-rose-400/50 bg-rose-400/10 p-2 text-rose-400">
-          <PixelIcon name="warning" size={20} />
-        </span>
-        <h3 className="font-pixel text-sm text-ink-900">{error.title}</h3>
-        <p className="text-sm leading-relaxed text-ink-500">{error.message}</p>
-        {error.details.length > 0 && (
-          <ul className="w-full space-y-1 border-2 border-paper-200 bg-paper-50/40 p-2 text-left text-[0.6875rem] text-ink-400">
-            {error.details.map((detail) => (
-              <li key={detail} className="truncate" title={detail}>
-                · {detail}
-              </li>
-            ))}
-          </ul>
-        )}
-        {onRetry && (
-          <Button variant="secondary" size="sm" onClick={onRetry}>
-            Reintentar
-          </Button>
-        )}
-      </div>
-    </Panel>
+    <div role="alert">
+      <Panel tone="muted" className={cx('border-rose-400/40 text-center', className)}>
+        <div className="mx-auto flex max-w-md flex-col items-center gap-3">
+          <span className="border-2 border-rose-400/50 bg-rose-400/10 p-2 text-rose-400">
+            <PixelIcon name="warning" size={20} />
+          </span>
+          <h3 className="font-pixel text-sm text-ink-900">{error.title}</h3>
+          <p className="text-sm leading-relaxed text-ink-500">{error.message}</p>
+          {error.details.length > 0 && (
+            <ul className="w-full space-y-1 border-2 border-paper-200 bg-paper-50/40 p-2 text-left text-[0.6875rem] text-ink-400">
+              {error.details.map((detail) => (
+                <li key={detail} className="truncate" title={detail}>
+                  · {detail}
+                </li>
+              ))}
+            </ul>
+          )}
+          {onRetry && (
+            <Button variant="secondary" size="sm" onClick={onRetry}>
+              Reintentar
+            </Button>
+          )}
+        </div>
+      </Panel>
+    </div>
   )
 }
 

@@ -34,17 +34,21 @@ function FieldShell({
 }: FieldShellProps) {
   return (
     <div className={cx('space-y-1.5', className)}>
-      <label htmlFor={htmlFor} className="flex items-baseline justify-between gap-2">
-        <span className="font-pixel text-[0.6875rem] uppercase tracking-[0.06em] text-ink-700">
+      <div className="flex items-baseline justify-between gap-2">
+        <label htmlFor={htmlFor} className="font-pixel text-[0.6875rem] uppercase tracking-[0.06em] text-ink-700">
           {label}
-          {required && <span className="ml-1 text-rose-400">*</span>}
-        </span>
-        {hint && !error && (
+          {required && (
+            <span className="ml-1 text-rose-400" aria-hidden="true">
+              *
+            </span>
+          )}
+        </label>
+        {hint && (
           <span id={hintId} className="text-[0.6875rem] text-ink-400">
             {hint}
           </span>
         )}
-      </label>
+      </div>
       {children}
       {error && (
         <p id={errorId} className="text-xs text-rose-400">
@@ -110,7 +114,7 @@ export function Input({
           id={inputId}
           required={required}
           aria-invalid={error ? 'true' : 'false'}
-          aria-describedby={describedBy(ariaDescribedBy, error ? undefined : hintId, errorId)}
+          aria-describedby={describedBy(ariaDescribedBy, hintId, errorId)}
           className={cx(CONTROL, Boolean(trailing) && 'pr-20', error && 'border-rose-400/70', className)}
           {...rest}
         />

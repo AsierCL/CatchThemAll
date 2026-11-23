@@ -48,7 +48,7 @@ const STATUS_COPY: Record<number, StatusCopy> = {
 
 const NETWORK_COPY: StatusCopy = {
   title: 'Sin conexión con la API',
-  message: 'No pudimos contactar al servidor. Verificá que el backend esté corriendo en localhost:8080.',
+  message: 'No pudimos contactar al servidor. Revisá tu conexión e intentá de nuevo.',
 }
 
 const TIMEOUT_COPY: StatusCopy = {

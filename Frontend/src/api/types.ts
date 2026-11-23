@@ -18,8 +18,8 @@ export interface FamousResponse {
   collectorCount: number
 }
 
-/** `UserResponse_Basic` y `UserResponse_Full`. */
-export interface UserResponse {
+/** `UserResponse_Basic`: la vista publica que no incluye `description`. */
+export interface UserResponseBasic {
   userId: string
   name: string
   score: number
@@ -27,8 +27,15 @@ export interface UserResponse {
   friendIds: string[]
   /** URL de la foto de perfil. Puede ser `null`: ahi `Avatar` cae a las iniciales. */
   photoUrl: string | null
-  description?: string
 }
+
+/** `UserResponse_Full`: la vista propia y la de una amistad, con `description`. */
+export interface UserResponseFull extends UserResponseBasic {
+  description: string
+}
+
+/** Un perfil publico puede venir en cualquiera de las dos vistas. */
+export type UserResponse = UserResponseBasic | UserResponseFull
 
 export interface CaptureResponse {
   captureId: string

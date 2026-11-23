@@ -7,18 +7,24 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const target = env.VITE_API_PROXY_TARGET || 'http://localhost:8080'
+  const proxy = {
+    '/api': {
+      target,
+      changeOrigin: true,
+      rewrite: (path: string) => path.replace(/^\/api/, ''),
+    },
+  }
 
   return {
     plugins: [react(), tailwindcss()],
     server: {
       port: 5173,
-      proxy: {
-        '/api': {
-          target,
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, ''),
-        },
-      },
+      proxy,
+    },
+    // `vite preview` tambien proxya para poder probar un build sin CORS.
+    preview: {
+      port: 4173,
+      proxy,
     },
   }
 })

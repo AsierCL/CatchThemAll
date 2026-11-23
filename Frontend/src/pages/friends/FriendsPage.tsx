@@ -3,19 +3,21 @@ import { Link } from 'react-router-dom'
 import { toAppError } from '../../api/errors'
 import type { AppError } from '../../api/errors'
 import { usersApi } from '../../api/endpoints'
-import type { UserResponse } from '../../api/types'
+import type { UserResponseBasic } from '../../api/types'
 import { useAuth } from '../../auth/AuthContext'
 import { Avatar } from '../../components/ui/Avatar'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Field'
 import { EmptyState, ErrorState, LoadingBlock } from '../../components/ui/Feedback'
 import { ConfirmDialog } from '../../components/ui/Modal'
+import { Pagination } from '../../components/ui/Pagination'
 import { Panel, SectionHeading } from '../../components/ui/Panel'
 import { PixelIcon } from '../../components/ui/PixelIcon'
 import { useToast } from '../../components/ui/Toast'
 import { formatNumber } from '../../lib/format'
 import { useAsync } from '../../lib/useAsync'
 import { usePageTitle } from '../../lib/usePageTitle'
+import { usePagination } from '../../lib/usePagination'
 
 const SEARCH_MIN_CHARS = 2
 const SEARCH_DEBOUNCE_MS = 300
@@ -26,18 +28,18 @@ export function FriendsPage() {
   const { status, user } = useAuth()
   const toast = useToast()
 
-  const friends = useAsync(() => {
-    if (!user) return Promise.resolve<UserResponse[]>([])
-    return usersApi.friends(user.userId)
+  const friends = useAsync<UserResponseBasic[]>((signal) => {
+    if (!user) return Promise.resolve([])
+    return usersApi.friends(user.userId, signal)
   }, [user?.userId])
 
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<UserResponse[]>([])
+  const [results, setResults] = useState<UserResponseBasic[]>([])
   const [searching, setSearching] = useState(false)
   const [searchError, setSearchError] = useState<AppError | null>(null)
   const [searchNonce, setSearchNonce] = useState(0)
   const [addingId, setAddingId] = useState<string | null>(null)
-  const [removing, setRemoving] = useState<UserResponse | null>(null)
+  const [removing, setRemoving] = useState<UserResponseBasic | null>(null)
   const [removingLoading, setRemovingLoading] = useState(false)
 
   const friendIds = useMemo(() => new Set((friends.data ?? []).map((friend) => friend.userId)), [friends.data])
@@ -46,6 +48,10 @@ export function FriendsPage() {
     () => results.filter((result) => result.userId !== user?.userId && !friendIds.has(result.userId)),
     [results, user?.userId, friendIds],
   )
+
+  const trimmedQuery = query.trim()
+  const friendsPagination = usePagination(friends.data ?? [], 12)
+  const searchPagination = usePagination(visibleResults, 8, trimmedQuery)
 
   useEffect(() => {
     const trimmed = query.trim()
@@ -57,12 +63,13 @@ export function FriendsPage() {
     }
 
     let active = true
+    const controller = new AbortController()
     setSearching(true)
     setSearchError(null)
 
     const timer = window.setTimeout(async () => {
       try {
-        const found = await usersApi.list(trimmed)
+        const found = await usersApi.list(trimmed, controller.signal)
         if (active) setResults(found)
       } catch (error) {
         if (active) setSearchError(toAppError(error))
@@ -74,6 +81,7 @@ export function FriendsPage() {
     return () => {
       active = false
       window.clearTimeout(timer)
+      controller.abort()
     }
   }, [query, searchNonce])
 
@@ -83,7 +91,7 @@ export function FriendsPage() {
   // declaradas se elevan y no heredan el estrechamiento del guard anterior).
   const currentUser = user
 
-  async function handleAdd(friend: UserResponse) {
+  async function handleAdd(friend: UserResponseBasic) {
     setAddingId(friend.userId)
     try {
       await usersApi.addFriend(currentUser.userId, friend.userId)
@@ -117,8 +125,6 @@ export function FriendsPage() {
     }
   }
 
-  const trimmedQuery = query.trim()
-
   return (
     <div className="space-y-6">
       <header className="space-y-2">
@@ -135,7 +141,7 @@ export function FriendsPage() {
           title="Tus amigos"
           description="Las amistades son recíprocas: si alguien te agrega, aparece acá."
         />
-        <div aria-live="polite">{renderFriends()}</div>
+        {renderFriends()}
       </section>
 
       <section className="space-y-4">
@@ -154,9 +160,7 @@ export function FriendsPage() {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
-          <div className="mt-4" aria-live="polite">
-            {renderSearch()}
-          </div>
+          <div className="mt-4">{renderSearch()}</div>
         </Panel>
       </section>
 
@@ -181,28 +185,39 @@ export function FriendsPage() {
   )
 
   function renderFriends() {
-    if (friends.loading) return <LoadingBlock label="Cargando amigos" />
-    if (friends.error) return <ErrorState error={friends.error} onRetry={friends.reload} />
+    if (friends.loading && !friends.data) return <LoadingBlock label="Cargando amigos" />
+    if (friends.error && !friends.data) return <ErrorState error={friends.error} onRetry={friends.reload} />
 
     const list = friends.data ?? []
-    if (list.length === 0) {
-      return (
-        <EmptyState
-          icon="users"
-          title="Todavía no tenés amigos"
-          description="Buscá cazadores por nombre para agregarlos y armar tu red."
-        />
-      )
-    }
-
     return (
-      <Panel padded={false}>
-        <ul aria-label="Lista de amigos">
-          {list.map((friend) => (
-            <FriendRow key={friend.userId} friend={friend} onRemove={() => setRemoving(friend)} />
-          ))}
-        </ul>
-      </Panel>
+      <div className="space-y-3">
+        {friends.error && <ErrorState error={friends.error} onRetry={friends.reload} />}
+        {list.length === 0 ? (
+          <EmptyState
+            icon="users"
+            title="Todavía no tenés amigos"
+            description="Buscá cazadores por nombre para agregarlos y armar tu red."
+          />
+        ) : (
+          <>
+            <Panel padded={false}>
+              <ul aria-label="Lista de amigos">
+                {friendsPagination.pageItems.map((friend) => (
+                  <FriendRow key={friend.userId} friend={friend} onRemove={() => setRemoving(friend)} />
+                ))}
+              </ul>
+            </Panel>
+            <Pagination
+              page={friendsPagination.page}
+              pageCount={friendsPagination.pageCount}
+              total={friendsPagination.total}
+              pageSize={12}
+              onPageChange={friendsPagination.setPage}
+              label="Páginas de amigos"
+            />
+          </>
+        )}
+      </div>
     )
   }
 
@@ -225,22 +240,32 @@ export function FriendsPage() {
     }
 
     return (
-      <ul aria-label="Resultados de búsqueda" className="border-2 border-paper-200">
-        {visibleResults.map((result) => (
-          <SearchResultRow
-            key={result.userId}
-            result={result}
-            adding={addingId === result.userId}
-            onAdd={() => handleAdd(result)}
-          />
-        ))}
-      </ul>
+      <div className="space-y-3">
+        <ul aria-label="Resultados de búsqueda" className="border-2 border-paper-200">
+          {searchPagination.pageItems.map((result) => (
+            <SearchResultRow
+              key={result.userId}
+              result={result}
+              adding={addingId === result.userId}
+              onAdd={() => handleAdd(result)}
+            />
+          ))}
+        </ul>
+        <Pagination
+          page={searchPagination.page}
+          pageCount={searchPagination.pageCount}
+          total={searchPagination.total}
+          pageSize={8}
+          onPageChange={searchPagination.setPage}
+          label="Páginas de resultados"
+        />
+      </div>
     )
   }
 }
 
 interface FriendRowProps {
-  friend: UserResponse
+  friend: UserResponseBasic
   onRemove: () => void
 }
 
@@ -267,7 +292,7 @@ function FriendRow({ friend, onRemove }: FriendRowProps) {
 }
 
 interface SearchResultRowProps {
-  result: UserResponse
+  result: UserResponseBasic
   adding: boolean
   onAdd: () => void
 }
