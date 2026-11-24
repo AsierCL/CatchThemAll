@@ -1,7 +1,7 @@
 package usc.enser.CatchThemAll.presentation.controller;
 
+import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.nio.file.AccessDeniedException;
 import java.util.concurrent.CompletableFuture;
 import java.io.IOException;
 import java.util.UUID;
@@ -12,6 +12,7 @@ import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,6 +26,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import usc.enser.CatchThemAll.annotations.RateLimited;
 import usc.enser.CatchThemAll.exception.ApiException;
 import usc.enser.CatchThemAll.presentation.dto.CaptureResponse;
 import usc.enser.CatchThemAll.presentation.dto.ErrorDTO;
@@ -38,13 +40,10 @@ public class CaptureController {
 
     private final ICaptureService captureService;
     private final ICurrentUserService currentUserService;
-    private final Executor executor;
 
-    public CaptureController(ICaptureService captureService, ICurrentUserService currentUserService,
-                             Executor grpcExecutor) {
+    public CaptureController(ICaptureService captureService, ICurrentUserService currentUserService) {
         this.captureService = captureService;
         this.currentUserService = currentUserService;
-        this.executor = grpcExecutor;
     }
 
     @Operation(
@@ -97,11 +96,16 @@ public class CaptureController {
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class)))
     })
     @PostMapping(value = "/{id}/identify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @RateLimited(capacity = 10, unit = ChronoUnit.MINUTES)
     public CompletableFuture<CaptureResponse> identify(
             @Parameter(description = "Identificador del usuario dueno de la captura", required = true)
             @PathVariable UUID id,
             @RequestPart("image") MultipartFile image,
             @RequestPart("name") @NotBlank @NotNull String name) throws IOException, HandlerMethodValidationException {
+
+        if (image == null || image.isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "image is required");
+        }
 
         if(currentUserService.getCurrentUserId().equals(id)){
             return captureService.identify(id,image,name);
@@ -150,20 +154,13 @@ public class CaptureController {
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public CompletableFuture<ResponseEntity<Void>> create(
             @RequestPart("image") MultipartFile image,
-            @RequestPart(value = "data", required = false) String data,
-            @RequestPart(value = "name", required = false) String name) throws IOException {
+            @RequestPart(value = "name") @NotBlank @NotNull String name) throws IOException {
 
         if (image == null || image.isEmpty()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "image is required");
         }
 
-        // La documentacion usa `data`; se acepta `name` para no romper clientes viejos.
-        String famousName = (data != null && !data.isBlank()) ? data : name;
-        if (famousName == null || famousName.isBlank()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "data is required");
-        }
-
-        return captureService.create(image, famousName.trim())
+        return captureService.create(image, name.trim())
                 .thenApply(response ->
                         ResponseEntity.status(HttpStatus.CREATED).build()
                 );

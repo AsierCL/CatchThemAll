@@ -1,11 +1,9 @@
 package usc.enser.CatchThemAll.presentation.controller;
 
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -14,9 +12,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import usc.enser.CatchThemAll.annotations.RateLimited;
 import usc.enser.CatchThemAll.presentation.dto.*;
 import usc.enser.CatchThemAll.service.interfaces.IAuthService;
 
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
 @RestController
@@ -47,6 +47,7 @@ public class AuthController {
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class)))
     })
     @PostMapping("/login")
+    @RateLimited(capacity = 5, unit = ChronoUnit.MINUTES)
     public TokenResponse login(@RequestBody @Valid UserLogin request) {
         return authService.login(request);
     }
@@ -68,6 +69,8 @@ public class AuthController {
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class)))
     })
     @PostMapping("/register")
+    @ResponseStatus(HttpStatus.CREATED)
+    @RateLimited(capacity = 5, unit = ChronoUnit.HOURS)
     public TokenResponse register(@RequestBody @Valid UserRegister request) {
         return authService.register(request);
     }
@@ -95,5 +98,6 @@ public class AuthController {
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class)))
     })
     @PostMapping("/refresh")
+    @RateLimited(capacity = 10, unit = ChronoUnit.MINUTES)
     public TokenResponse refreshToken(@RequestBody @Valid RefreshRequest request){ return authService.refresh(request); }
 }

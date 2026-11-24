@@ -12,6 +12,7 @@ import java.util.concurrent.Executor;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.jspecify.annotations.NonNull;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -25,6 +26,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.ByteString;
 
 import usc.enser.CatchThemAll.exception.ApiException;
+import usc.enser.CatchThemAll.exception.RecognitionServiceUnavailableException;
 import usc.enser.CatchThemAll.persistence.entities.Captures;
 import usc.enser.CatchThemAll.persistence.entities.Famous;
 import usc.enser.CatchThemAll.persistence.entities.User;
@@ -38,7 +40,7 @@ import usc.enser.CatchThemAll.service.interfaces.IScoreService;
 @Service
 public class CaptureServiceImpl implements ICaptureService {
 
-    private static final double CAPTURE_SIMILARITY_THRESHOLD = 0.8;
+    //private static final double CAPTURE_SIMILARITY_THRESHOLD = 0.8;
 
     private final CaptureServiceGrpc.CaptureServiceFutureStub captureServiceStub;
     private final IScoreService scoreService;
@@ -61,14 +63,13 @@ public class CaptureServiceImpl implements ICaptureService {
     }
 
     @Override
+    @CircuitBreaker(name = "facialRecognition", fallbackMethod = "recognitionFallback")
     public CompletableFuture<CaptureResponse> identify(UUID userId, MultipartFile image,
                                                        String name) throws IOException {
-        if (image == null || image.isEmpty()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "image is required");
-        }
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user not found"));
+
         Famous famous = famousRepository.findByName(name.trim())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "famous not found"));
 
@@ -77,42 +78,47 @@ public class CaptureServiceImpl implements ICaptureService {
                 .setName(famous.getName())
                 .build();
 
-        //Esperamos la respuesta
         ListenableFuture<CaptureIdentifyResponse> futureResponse =
                 captureServiceStub.identify(identifyRequest);
 
-        //Cambiamos el tipo de dato devuelto
-        ListenableFuture<CaptureResponse> guavaFuture = Futures.transform(
-                futureResponse,
-                identifyResponse -> {
-                    if (identifyResponse == null) {
-                        throw new IllegalStateException("No se pudo completar la identificación");
-                    }
-                    Captures capture = new Captures();
-                    capture.setUser(user);
-                    capture.setFamous(famous);
-                    capture.setTimestamp(new Timestamp(System.currentTimeMillis()));
-                    capture.setSimilarity(identifyResponse.getSimilarity());
-                    //capture.setPhotoUrl();
-                    boolean captured = captureRepository.existsByFamousAndUser(famous, user);
-                    Captures savedCapture = captureRepository.save(capture);
-                    return new CaptureResponse(savedCapture.getCaptureId(),famous.getFamousId(),
-                            famous.getName(), savedCapture.getSimilarity(), captured, savedCapture.getTimestamp());
-                },
-                executor);
-
-        //Pasamos a CompletableFuture
         CompletableFuture<CaptureResponse> result = new CompletableFuture<>();
 
-        Futures.addCallback(guavaFuture, new FutureCallback<>() {
+        Futures.addCallback(futureResponse, new FutureCallback<>() {
             @Override
-            public void onSuccess(CaptureResponse r) {
+            public void onSuccess(CaptureIdentifyResponse response) {
                 try {
-                    if (!r.captured()) {
-                        scoreService.updateScore(name, r.similarity(), userId);
+                    if (response == null) {
+                        throw new IllegalStateException(
+                                "No se pudo completar la identificación");
                     }
-                    result.complete(r);
-                }catch (Exception e){
+
+                    double similarity = response.getSimilarity();
+
+                    // Preparamos la captura, pero todavía no la guardamos.
+                    Captures capture = createCaptureIfCaptured(user, famous, similarity);
+
+                    // finishFuture se encarga de guardar la captura y actualizar
+                    // la puntuación cuando corresponda.
+                    scoreService.finishFuture(name, similarity, userId, capture);
+
+                    CaptureResponse captureResponse;
+
+                    if (capture != null) {
+                        captureResponse = toHistoryResponse(capture);
+                    } else {
+                        captureResponse = new CaptureResponse(
+                                null,
+                                famous.getFamousId(),
+                                famous.getName(),
+                                similarity,
+                                false,
+                                null
+                        );
+                    }
+
+                    result.complete(captureResponse);
+
+                } catch (Exception e) {
                     result.completeExceptionally(e);
                 }
             }
@@ -174,18 +180,33 @@ public class CaptureServiceImpl implements ICaptureService {
         return toHistoryResponse(capture);
     }
 
-    private CaptureResponse recordIfCaptured(User user, Famous famous, CaptureIdentifyResponse response) {
-        double similarity = response.getSimilarity();
-        if (!(similarity >= CAPTURE_SIMILARITY_THRESHOLD)) {
-            return new CaptureResponse(null, famous.getFamousId(), famous.getName(), similarity, false, null);
-        }
+    private CompletableFuture<CaptureResponse> recognitionFallback (UUID userId, MultipartFile image,
+                                                                    String name, Throwable exception){
+
+        System.out.println("Excepción recibida por el fallback: "
+                + exception.getClass().getName());
+        exception.printStackTrace();
+
+        return CompletableFuture.failedFuture(
+                new RecognitionServiceUnavailableException(
+                        "Facial recognition service unavailable", exception
+                )
+        );
+    }
+
+    private Captures createCaptureIfCaptured(User user, Famous famous,
+                                             double similarity) {
+        /*if (!(similarity >= CAPTURE_SIMILARITY_THRESHOLD)) {
+            return null;
+        }*/
 
         Captures capture = new Captures();
         capture.setUser(user);
         capture.setFamous(famous);
         capture.setTimestamp(Timestamp.from(Instant.now()));
         capture.setSimilarity(similarity);
-        return toHistoryResponse(captureRepository.save(capture));
+
+        return capture;
     }
 
     private CaptureResponse toHistoryResponse(Captures capture) {

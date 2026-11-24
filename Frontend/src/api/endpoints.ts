@@ -1,6 +1,7 @@
 import { http } from './client'
 import type {
   CaptureResponse,
+  PageResponse,
   FamousCategory,
   FamousFilters,
   FamousResponse,
@@ -158,8 +159,8 @@ export const capturesApi = {
     return data
   },
 
-  async mine(): Promise<CaptureResponse[]> {
-    const { data } = await http.get<CaptureResponse[]>('/captures/me')
+  async mine(): Promise<PageResponse<CaptureResponse>> {
+    const { data } = await http.get<PageResponse<CaptureResponse>>('/captures/me')
     return data
   },
 

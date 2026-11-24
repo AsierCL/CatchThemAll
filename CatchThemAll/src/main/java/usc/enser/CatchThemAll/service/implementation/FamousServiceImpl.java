@@ -7,6 +7,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,21 +38,22 @@ public class FamousServiceImpl implements IFamousService {
     @Override
     //Podemos usar specification si hay muchos parámetros
     @Cacheable(cacheNames = "famous", key = "#type + '-' + #category", unless = "#result == null")
-    public List<FamousResponse> findAll(FamousTypes type, FamousCategories category) {
+    public Page<FamousResponse> findAll(FamousTypes type, FamousCategories category, Pageable pageable) {
 
         if(type != null && category != null){
-            return withStatistics(famousRepository.findByTypeAndCategoryOrderByPokedexNumberAsc(type,category));
+            return withStatistics(famousRepository.findByTypeAndCategoryOrderByPokedexNumberAsc(type,category, pageable));
         }else if(type != null){
-            return withStatistics(famousRepository.findByTypeOrderByPokedexNumberAsc(type));
+            return withStatistics(famousRepository.findByTypeOrderByPokedexNumberAsc(type, pageable));
         }else if(category != null){
-            return withStatistics(famousRepository.findByCategoryOrderByPokedexNumberAsc(category));
+            return withStatistics(famousRepository.findByCategoryOrderByPokedexNumberAsc(category,pageable));
         }else{
-            return withStatistics(famousRepository.findAllByOrderByPokedexNumberAsc());
+            return withStatistics(famousRepository.findAllByOrderByPokedexNumberAsc(pageable));
         }
 
     }
 
     @Override
+    @Cacheable(cacheNames = "famous")
     public FamousResponse findById(UUID famousId) {
         Famous famous = famousRepository.findById(famousId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "famous not found"));
@@ -59,18 +62,16 @@ public class FamousServiceImpl implements IFamousService {
         return toResponse(famous, statistics);
     }
 
-    private List<FamousResponse> withStatistics(List<Famous> famous) {
+    private Page<FamousResponse> withStatistics(Page<Famous> famous) {
         if (famous.isEmpty()) {
-            return List.of();
+            return Page.empty(famous.getPageable());
         }
 
         Map<UUID, FamousCaptureStatistics> statisticsByFamousId = captureRepository.findCaptureStatisticsForAll()
                 .stream()
                 .collect(Collectors.toMap(FamousCaptureStatistics::getFamousId, Function.identity()));
 
-        return famous.stream()
-                .map(item -> toResponse(item, statisticsByFamousId.get(item.getFamousId())))
-                .toList();
+        return famous.map(item -> toResponse(item, statisticsByFamousId.get(item.getFamousId())));
     }
 
     private FamousResponse toResponse(Famous famous, FamousCaptureStatistics statistics) {

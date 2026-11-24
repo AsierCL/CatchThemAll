@@ -5,6 +5,12 @@ import psycopg2
 from pgvector.psycopg2 import register_vector
 from insightface.app import FaceAnalysis
 from concurrent import futures
+import os
+from dotenv import load_dotenv
+
+MAX_MESSAGE_SIZE = 10 * 1024 * 1024
+
+load_dotenv()
 
 def server():
     app = FaceAnalysis(
@@ -13,11 +19,13 @@ def server():
         )
     app.prepare(ctx_id=-1, det_size=(640, 640))
     conexion = psycopg2.connect(
-            database="catchthemall",
-            user="usuario",
-            password="password123",
-            host="localhost",
-            port="7777"
+        host=os.getenv("SUPABASE_DB_HOST"),
+        port=os.getenv("SUPABASE_DB_PORT"),
+        dbname=os.getenv("SUPABASE_DB_NAME"),
+        user=os.getenv("SUPABASE_DB_USER"),
+        password=os.getenv("SUPABASE_DB_PASSWORD"),
+        sslmode="require",
+        connect_timeout=5
     )
     conexion.autocommit = True
     cursor = conexion.cursor()
@@ -39,7 +47,10 @@ def server():
         ON face_embeddings (name)
     """)
 
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10),
+                         options=[
+                             ("grpc.max_receive_message_length", MAX_MESSAGE_SIZE),
+                         ])
     capture_pb2_grpc.add_CaptureServiceServicer_to_server(
         CaptureService(app,cursor),
         server,

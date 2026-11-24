@@ -50,7 +50,7 @@ export function RankingPage() {
     )
   }
 
-  const entries = ranking.data ?? []
+  const entries = ranking.data?.content ?? []
 
   return (
     <div className="space-y-6">

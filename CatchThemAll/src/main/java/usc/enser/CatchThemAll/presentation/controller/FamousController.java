@@ -3,6 +3,9 @@ package usc.enser.CatchThemAll.presentation.controller;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -53,12 +56,13 @@ public class FamousController {
                     content = @Content(schema = @Schema(implementation = ErrorDTO.class)))
     })
     @GetMapping
-    public List<FamousResponse> findAll(
+    public Page<FamousResponse> findAll(
             @Parameter(description = "Filtra por tipo de famoso", example = "politic")
             @RequestParam(required = false) FamousTypes type,
             @Parameter(description = "Filtra por categoria de la Pokedex", example = "legendary")
-            @RequestParam(required = false) FamousCategories category) {
-        return famousService.findAll(type, category);
+            @RequestParam(required = false) FamousCategories category,
+            @PageableDefault(sort = "pokedexNumber") Pageable pageable) {
+        return famousService.findAll(type, category,pageable);
     }
 
     @Operation(

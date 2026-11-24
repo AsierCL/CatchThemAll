@@ -5,10 +5,65 @@ import numpy as np
 import threading
 
 
-def bytes_to_image(image_bytes, context):
-    if not image_bytes:
-        context.abort(grpc.StatusCode.INVALID_ARGUMENT, "La imagen es un campo obligatorio")
 
+import grpc
+import cv2
+import numpy as np
+
+from io import BytesIO
+from PIL import Image, UnidentifiedImageError
+import warnings
+
+MAX_IMAGE_BYTES = 10 * 1024 * 1024  # 10 MiB
+MAX_WIDTH = 4096
+MAX_HEIGHT = 4096
+MAX_PIXELS = 16_000_000
+
+
+def bytes_to_image(image_bytes, context):
+
+    # 1. Comprobar que la imagen no está vacía
+    if not image_bytes:
+        context.abort(
+            grpc.StatusCode.INVALID_ARGUMENT,
+            "La imagen es un campo obligatorio"
+        )
+
+    # 2. Comprobar el tamaño de los bytes recibidos
+    if len(image_bytes) > MAX_IMAGE_BYTES:
+        context.abort(
+            grpc.StatusCode.RESOURCE_EXHAUSTED,
+            "La imagen supera el tamaño máximo permitido (10 MiB)"
+        )
+
+    # 3. Comprobar las dimensiones antes de decodificar
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+
+            with Image.open(BytesIO(image_bytes)) as image:
+                width, height = image.size
+
+                if width > MAX_WIDTH or height > MAX_HEIGHT:
+                    context.abort(
+                        grpc.StatusCode.RESOURCE_EXHAUSTED,
+                        "Las dimensiones de la imagen superan el límite permitido"
+                    )
+
+                if width * height > MAX_PIXELS:
+                    context.abort(
+                        grpc.StatusCode.RESOURCE_EXHAUSTED,
+                        "La imagen supera el número máximo de píxeles permitido"
+                    )
+
+    except (UnidentifiedImageError, OSError,
+            Image.DecompressionBombError, Image.DecompressionBombWarning):
+        context.abort(
+            grpc.StatusCode.INVALID_ARGUMENT,
+            "La imagen tiene un formato inválido o está dañada"
+        )
+
+    # 4. Decodificar con OpenCV
     image_array = np.frombuffer(image_bytes, dtype=np.uint8)
     image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
 
@@ -19,6 +74,7 @@ def bytes_to_image(image_bytes, context):
         )
 
     return image
+
 
 
 def embedding_to_list(value):

@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import usc.enser.CatchThemAll.enums.FamousCategories;
@@ -15,16 +17,16 @@ public interface FamousRepository extends JpaRepository<Famous, UUID>{
 
     Optional<Famous> findByName(String name);
 
-    List<Famous> findAllByOrderByPokedexNumberAsc();
+    Page<Famous> findAllByOrderByPokedexNumberAsc(Pageable pageable);
 
-    List<Famous> findByTypeAndCategoryOrderByPokedexNumberAsc(FamousTypes type, FamousCategories category);
+    Page<Famous> findByTypeAndCategoryOrderByPokedexNumberAsc(FamousTypes type, FamousCategories category, Pageable pageable);
 
     List<Famous> findByType(FamousTypes type);
 
-    List<Famous> findByTypeOrderByPokedexNumberAsc(FamousTypes type);
+    Page<Famous> findByTypeOrderByPokedexNumberAsc(FamousTypes type, Pageable pageable);
 
     List<Famous> findByCategory(FamousCategories category);
 
-    List<Famous> findByCategoryOrderByPokedexNumberAsc(FamousCategories category);
+    Page<Famous> findByCategoryOrderByPokedexNumberAsc(FamousCategories category, Pageable pageable);
 
 }

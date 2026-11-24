@@ -3,6 +3,8 @@ package usc.enser.CatchThemAll.service.implementation;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import usc.enser.CatchThemAll.persistence.entities.Captures;
+import usc.enser.CatchThemAll.persistence.repositories.CaptureRepository;
 import usc.enser.CatchThemAll.persistence.repositories.FamousRepository;
 import usc.enser.CatchThemAll.persistence.repositories.UserRepository;
 import usc.enser.CatchThemAll.service.interfaces.IScoreService;
@@ -14,16 +16,22 @@ public class ScoreServiceImpl implements IScoreService {
 
     private final FamousRepository famousRepository;
     private final UserRepository userRepository;
+    private final CaptureRepository captureRepository;
 
-    public ScoreServiceImpl(FamousRepository famousRepository,
-                        UserRepository userRepository) {
+    public ScoreServiceImpl(FamousRepository famousRepository, UserRepository userRepository, CaptureRepository captureRepository) {
         this.famousRepository = famousRepository;
         this.userRepository = userRepository;
+        this.captureRepository = captureRepository;
     }
 
     @Transactional
-    @CacheEvict(cacheNames = {"ranking", "famous", "captures"}, allEntries = true)
-    public void updateScore(String name, double similarity, UUID id) {
+    @CacheEvict(cacheNames = {"ranking", "famous", "captures"})
+    public void finishFuture(String name, double similarity, UUID id, Captures capture){
+        captureRepository.save(capture);
+        updateScore(name, similarity, id);
+    }
+
+    private void updateScore(String name, double similarity, UUID id) {
 
         int points = famousRepository.findByName(name).map(famous ->
                 switch (famous.getCategory()) {

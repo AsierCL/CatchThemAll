@@ -27,11 +27,9 @@ import usc.enser.CatchThemAll.persistence.entities.RefreshToken;
 import usc.enser.CatchThemAll.persistence.entities.User;
 import usc.enser.CatchThemAll.persistence.repositories.RefreshTokenRepository;
 import usc.enser.CatchThemAll.persistence.repositories.UserRepository;
-import usc.enser.CatchThemAll.presentation.dto.RefreshRequest;
-import usc.enser.CatchThemAll.presentation.dto.TokenResponse;
-import usc.enser.CatchThemAll.presentation.dto.UserLogin;
-import usc.enser.CatchThemAll.presentation.dto.UserRegister;
+import usc.enser.CatchThemAll.presentation.dto.*;
 import usc.enser.CatchThemAll.service.interfaces.IAuthService;
+import usc.enser.CatchThemAll.service.interfaces.IRefreshTokenService;
 
 @Service
 public class AuthServiceImpl implements IAuthService {
@@ -39,7 +37,7 @@ public class AuthServiceImpl implements IAuthService {
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
-    private final RefreshTokenService refreshTokenService;
+    private final IRefreshTokenService refreshTokenService;
     private final JwtEncoder jwtEncoder;
     private final Duration tokenDuration;
     private final PasswordEncoder passwordEncoder;
@@ -47,7 +45,7 @@ public class AuthServiceImpl implements IAuthService {
     public AuthServiceImpl(AuthenticationManager authenticationManager,
                            UserRepository userRepository,
                            RefreshTokenRepository refreshTokenRepository,
-                           RefreshTokenService refreshTokenService,
+                           IRefreshTokenService refreshTokenService,
                            JwtEncoder jwtEncoder,
                            @Value("${security.jwt.expiration-minutes:15}") long expirationMinutes, PasswordEncoder passwordEncoder) {
         this.authenticationManager = authenticationManager;
@@ -77,11 +75,13 @@ public class AuthServiceImpl implements IAuthService {
         refreshTokenRepository.deleteByUser_UserId(user.getUserId());
         refreshTokenRepository.flush();
 
-        RefreshToken refreshToken = refreshTokenService.create(user.getUserId());
-        return generateToken(user, refreshToken.getToken());
+        RefreshTokenResult result = refreshTokenService.create(user.getUserId());
+        String refreshToken = result.rawToken();
+        return generateToken(user, refreshToken);
     }
 
     @Override
+    @Transactional(noRollbackFor = ApiException.class)
     public TokenResponse register(UserRegister request){
 
         String name = request.name().trim();
@@ -102,21 +102,26 @@ public class AuthServiceImpl implements IAuthService {
 
         User savedUser = userRepository.save(user);
         //Creamos el refreshToken
-        RefreshToken refreshToken = refreshTokenService.create(savedUser.getUserId());
-        return generateToken(savedUser,refreshToken.getToken());
+        RefreshTokenResult result = refreshTokenService.create(savedUser.getUserId());
+        String refreshToken = result.rawToken();
+        return generateToken(savedUser,refreshToken);
     }
 
     @Override
     @Transactional(noRollbackFor = ApiException.class)
     public TokenResponse refresh(RefreshRequest request) {
 
+        // El cliente envía el token original
         String requestToken = request.refreshToken();
 
+        // Buscamos utilizando su hash
+        String hashedToken = refreshTokenService.hashToken(requestToken);
+
         RefreshToken token = refreshTokenRepository
-                .findByToken(requestToken)
+                .findByToken(hashedToken)
                 .orElseThrow(() -> new ApiException(
-                        HttpStatus.NOT_FOUND,
-                        "Refresh token not found"
+                        HttpStatus.UNAUTHORIZED,
+                        "Invalid refresh token"
                 ));
 
         if (refreshTokenService.isExpired(token)) {
@@ -129,12 +134,18 @@ public class AuthServiceImpl implements IAuthService {
             );
         }
 
+        // Guardamos el usuario antes de eliminar el token
+        User user = token.getUser();
+
+        // Rotación del refresh token
         refreshTokenRepository.delete(token);
         refreshTokenRepository.flush();
 
-        RefreshToken newRefreshToken = refreshTokenService.create(token.getUser().getUserId());
+        RefreshTokenResult result =
+                refreshTokenService.create(user.getUserId());
 
-        return generateToken(token.getUser(), newRefreshToken.getToken());
+        // Devolvemos el token original, no el hash
+        return generateToken(user, result.rawToken());
     }
 
     private TokenResponse generateToken(User user, String refreshToken){

@@ -67,7 +67,7 @@ export function MyPokedexPage() {
   usePageTitle('Mi Pokédex')
 
   const { data, error, loading, reload } = useAsync(() => capturesApi.mine(), [])
-  const captures = data ?? []
+  const captures = data?.content ?? []
 
   const distinctCount = new Set(captures.map((capture) => capture.famousId)).size
   const bestSimilarity = captures.reduce((max, capture) => Math.max(max, capture.similarity), 0)

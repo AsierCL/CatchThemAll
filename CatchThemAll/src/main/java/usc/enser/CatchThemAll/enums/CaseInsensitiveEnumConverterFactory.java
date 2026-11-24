@@ -18,10 +18,7 @@ public class CaseInsensitiveEnumConverterFactory implements ConverterFactory<Str
 
     @Override
     public <T extends Enum> Converter<String, T> getConverter(Class<T> targetType) {
-        System.out.println("Converter solicitado para: " + targetType.getName());
-
         return source -> {
-            System.out.println("Convirtiendo valor: " + source);
             return convert(targetType, source);
         };
     }

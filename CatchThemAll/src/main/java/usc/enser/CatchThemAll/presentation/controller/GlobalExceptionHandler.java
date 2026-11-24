@@ -2,12 +2,15 @@ package usc.enser.CatchThemAll.presentation.controller;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 
 import io.grpc.StatusRuntimeException;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -26,6 +29,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import usc.enser.CatchThemAll.exception.ApiException;
+import usc.enser.CatchThemAll.exception.RecognitionServiceUnavailableException;
 import usc.enser.CatchThemAll.presentation.dto.ErrorDTO;
 
 @RestControllerAdvice
@@ -38,13 +42,20 @@ public class GlobalExceptionHandler {
         return build(exception.getStatus(), exception.getMessage(), request, List.of());
     }
 
-    @ExceptionHandler({
-            MethodArgumentNotValidException.class,
-            HandlerMethodValidationException.class
-    })
+    @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorDTO> handleValidation(MethodArgumentNotValidException exception, HttpServletRequest request) {
         List<String> details = exception.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .toList();
+        return build(HttpStatus.BAD_REQUEST, "validation failed", request, details);
+    }
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ErrorDTO> handleMethodValidation(HandlerMethodValidationException exception, HttpServletRequest request) {
+        List<String> details = exception.getParameterValidationResults().stream()
+                .flatMap(result -> result.getResolvableErrors().stream())
+                .map(MessageSourceResolvable::getDefaultMessage)
+                .filter(Objects::nonNull)
                 .toList();
         return build(HttpStatus.BAD_REQUEST, "validation failed", request, details);
     }
@@ -59,9 +70,19 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "malformed request", request, List.of());
     }
 
+    @ExceptionHandler(RecognitionServiceUnavailableException.class)
+    public ResponseEntity<ErrorDTO> handleRecognitionUnavailable(RecognitionServiceUnavailableException ex, HttpServletRequest request) {
+        return build(HttpStatus.SERVICE_UNAVAILABLE, "facial recognition unavailable", request, List.of());
+    }
+
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ErrorDTO> handleNotFound(NoResourceFoundException exception, HttpServletRequest request) {
         return build(HttpStatus.NOT_FOUND, "resource not found", request, List.of());
+    }
+
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<ErrorDTO> handleNotFound(EntityNotFoundException exception, HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, "entity not found", request, List.of());
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
