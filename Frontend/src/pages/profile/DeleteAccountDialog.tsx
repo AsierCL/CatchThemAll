@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toAppError } from '../../api/errors'
 import { usersApi } from '../../api/endpoints'
-import type { UserResponse } from '../../api/types'
+import type { UserResponseFull } from '../../api/types'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Field'
 import { Modal } from '../../components/ui/Modal'
@@ -10,7 +10,7 @@ import { PixelIcon } from '../../components/ui/PixelIcon'
 import { useToast } from '../../components/ui/Toast'
 
 interface DeleteAccountDialogProps {
-  user: UserResponse
+  user: UserResponseFull
   open: boolean
   onClose: () => void
   onLogout: () => void

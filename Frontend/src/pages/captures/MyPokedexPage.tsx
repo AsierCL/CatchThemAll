@@ -4,12 +4,14 @@ import type { CaptureResponse } from '../../api/types'
 import { Badge } from '../../components/ui/Badge'
 import { ButtonLink } from '../../components/ui/ButtonLink'
 import { EmptyState, ErrorState, LoadingBlock } from '../../components/ui/Feedback'
+import { Pagination } from '../../components/ui/Pagination'
 import { PixelIcon, type IconName } from '../../components/ui/PixelIcon'
 import { ProgressBar } from '../../components/ui/ProgressBar'
 import { formatSimilarity, similarityTier } from '../../lib/domain'
 import { formatDateTime, formatNumber, formatRelative } from '../../lib/format'
 import { useAsync } from '../../lib/useAsync'
 import { usePageTitle } from '../../lib/usePageTitle'
+import { usePagination } from '../../lib/usePagination'
 
 interface StatCardProps {
   label: string
@@ -66,13 +68,14 @@ function CaptureRow({ capture }: { capture: CaptureResponse }) {
 export function MyPokedexPage() {
   usePageTitle('Mi Pokédex')
 
-  const { data, error, loading, reload } = useAsync(() => capturesApi.mine(), [])
-  const captures = data?.content ?? []
+  const { data, error, loading, reload } = useAsync((signal) => capturesApi.mine(signal), [])
+  const captures = data ?? []
+  const pagination = usePagination(captures, 12)
 
   const distinctCount = new Set(captures.map((capture) => capture.famousId)).size
   const bestSimilarity = captures.reduce((max, capture) => Math.max(max, capture.similarity), 0)
 
-  const showEmpty = !loading && !error && captures.length === 0
+  const showEmpty = captures.length === 0
 
   return (
     <div className="space-y-8">
@@ -84,39 +87,52 @@ export function MyPokedexPage() {
         </p>
       </header>
 
-      {loading ? (
+      {loading && !data ? (
         <LoadingBlock label="Cargando capturas" />
-      ) : error ? (
+      ) : error && !data ? (
         <ErrorState error={error} onRetry={reload} />
-      ) : showEmpty ? (
-        <EmptyState
-          icon="camera"
-          title="Todavía no capturaste a nadie"
-          description="Sacá una foto o subí un archivo para sumar tu primer famoso a la Pokédex."
-          action={
-            <ButtonLink to="/capturar" icon={<PixelIcon name="camera" size={14} />}>
-              Ir a capturar
-            </ButtonLink>
-          }
-        />
       ) : (
         <>
-          <section aria-label="Estadísticas del historial">
-            <dl className="grid grid-cols-3 gap-2 sm:gap-3">
-              <StatCard label="Total de capturas" value={formatNumber(captures.length)} icon="camera" />
-              <StatCard label="Famosos distintos" value={formatNumber(distinctCount)} icon="ball" />
-              <StatCard label="Mejor similitud" value={formatSimilarity(bestSimilarity)} icon="spark" />
-            </dl>
-          </section>
+          {error && <ErrorState error={error} onRetry={reload} />}
+          {showEmpty ? (
+            <EmptyState
+              icon="camera"
+              title="Todavía no capturaste a nadie"
+              description="Sacá una foto o subí un archivo para sumar tu primer famoso a la Pokédex."
+              action={
+                <ButtonLink to="/capturar" icon={<PixelIcon name="camera" size={14} />}>
+                  Ir a capturar
+                </ButtonLink>
+              }
+            />
+          ) : (
+            <>
+              <section aria-label="Estadísticas del historial">
+                <dl className="grid grid-cols-3 gap-2 sm:gap-3">
+                  <StatCard label="Total de capturas" value={formatNumber(captures.length)} icon="camera" />
+                  <StatCard label="Famosos distintos" value={formatNumber(distinctCount)} icon="ball" />
+                  <StatCard label="Mejor similitud" value={formatSimilarity(bestSimilarity)} icon="spark" />
+                </dl>
+              </section>
 
-          <section aria-label="Historial de capturas" className="space-y-4">
-            <h2 className="font-pixel text-lg text-ink-900">Historial</h2>
-            <ul className="space-y-3">
-              {captures.map((capture) => (
-                <CaptureRow key={capture.captureId} capture={capture} />
-              ))}
-            </ul>
-          </section>
+              <section aria-label="Historial de capturas" className="space-y-4">
+                <h2 className="font-pixel text-lg text-ink-900">Historial</h2>
+                <ul className="space-y-3">
+                  {pagination.pageItems.map((capture) => (
+                    <CaptureRow key={capture.captureId} capture={capture} />
+                  ))}
+                </ul>
+                <Pagination
+                  page={pagination.page}
+                  pageCount={pagination.pageCount}
+                  total={pagination.total}
+                  pageSize={12}
+                  onPageChange={pagination.setPage}
+                  label="Páginas del historial"
+                />
+              </section>
+            </>
+          )}
         </>
       )}
 

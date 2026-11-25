@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button'
 import { ButtonLink } from '../../components/ui/ButtonLink'
 import { EmptyState, ErrorState, LoadingGrid } from '../../components/ui/Feedback'
 import { Input } from '../../components/ui/Field'
+import { Pagination } from '../../components/ui/Pagination'
 import { Panel, SectionHeading } from '../../components/ui/Panel'
 import { PixelIcon } from '../../components/ui/PixelIcon'
 import { useAuth } from '../../auth/AuthContext'
@@ -13,6 +14,7 @@ import { cx } from '../../lib/cx'
 import { CATEGORY_META, CATEGORY_ORDER, TYPE_META, TYPE_ORDER } from '../../lib/domain'
 import { useAsync } from '../../lib/useAsync'
 import { usePageTitle } from '../../lib/usePageTitle'
+import { usePagination } from '../../lib/usePagination'
 
 function normalize(value: string): string {
   return value
@@ -60,7 +62,7 @@ export function PokedexPage() {
   const [filtersOpen, setFiltersOpen] = useState(false)
 
   const { data, error, loading, reload } = useAsync<FamousResponse[]>(
-    () => famousApi.list({ type: type ?? undefined, category: category ?? undefined }),
+    (signal) => famousApi.list({ type: type ?? undefined, category: category ?? undefined }, signal),
     [type, category],
   )
 
@@ -73,6 +75,7 @@ export function PokedexPage() {
     return filtered.toSorted((a, b) => a.pokedexNumber - b.pokedexNumber)
   }, [data, query])
 
+  const pagination = usePagination(visible, 24, `${type ?? ''}-${category ?? ''}-${query.trim()}`)
   const activeFilters = (type ? 1 : 0) + (category ? 1 : 0) + (query.trim() ? 1 : 0)
   const activeChips = (type ? 1 : 0) + (category ? 1 : 0)
 
@@ -113,8 +116,9 @@ export function PokedexPage() {
         />
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t-2 border-paper-200 pt-3">
-          <p role="status" className="font-pixel text-[0.625rem] uppercase tracking-[0.05em] text-ink-400">
-            {loading ? 'Cargando…' : `${visible.length} resultado${visible.length === 1 ? '' : 's'}`}
+          <p className="font-pixel text-[0.625rem] uppercase tracking-[0.05em] text-ink-400">
+            <span role="status">{loading && data ? 'Cargando…' : null}</span>
+            {!loading && `${visible.length} resultado${visible.length === 1 ? '' : 's'}`}
           </p>
           {activeFilters > 0 && (
             <Button variant="ghost" size="sm" onClick={clearFilters}>
@@ -187,31 +191,46 @@ export function PokedexPage() {
       </Panel>
 
       {loading && !data ? (
-        <LoadingGrid count={8} />
-      ) : error ? (
+        <LoadingGrid count={8} label="Cargando catálogo" />
+      ) : error && !data ? (
         <ErrorState error={error} onRetry={reload} />
-      ) : visible.length === 0 ? (
-        <EmptyState
-          icon="search"
-          title="No hay famosos con esos filtros"
-          description="Probá con otra rareza, otro tipo o borrá la búsqueda."
-          action={
-            <Button variant="secondary" size="sm" onClick={clearFilters}>
-              Limpiar filtros
-            </Button>
-          }
-        />
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-          {visible.map((famous) => (
-            <FamousCard key={famous.famousId} famous={famous} />
-          ))}
-        </div>
+        <>
+          {error && <ErrorState error={error} onRetry={reload} />}
+          {visible.length === 0 ? (
+            <EmptyState
+              icon="search"
+              title="No hay famosos con esos filtros"
+              description="Probá con otra rareza, otro tipo o borrá la búsqueda."
+              action={
+                <Button variant="secondary" size="sm" onClick={clearFilters}>
+                  Limpiar filtros
+                </Button>
+              }
+            />
+          ) : (
+            <>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+                {pagination.pageItems.map((famous) => (
+                  <FamousCard key={famous.famousId} famous={famous} />
+                ))}
+              </div>
+              <Pagination
+                page={pagination.page}
+                pageCount={pagination.pageCount}
+                total={pagination.total}
+                pageSize={24}
+                onPageChange={pagination.setPage}
+                label="Páginas del catálogo"
+              />
+            </>
+          )}
+        </>
       )}
 
       <p className="flex items-start gap-2 text-[0.6875rem] leading-relaxed text-ink-400">
         <PixelIcon name="clock" size={12} className="mt-0.5" />
-        El catálogo se sirve desde una cache de hasta 24 horas: los conteos de capturas pueden ir un poco
+        El catálogo se sirve desde una cache de hasta 5 minutos: los conteos de capturas pueden ir un poco
         atrasados.
       </p>
     </div>

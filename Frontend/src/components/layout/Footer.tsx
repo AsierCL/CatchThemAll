@@ -1,7 +1,18 @@
 import { Link } from 'react-router-dom'
 import { PixelIcon } from '../ui/PixelIcon'
 
+function swaggerUrlFromBase(base: string | undefined): string | undefined {
+  if (!base?.startsWith('http')) return undefined
+  try {
+    return new URL('/swagger-ui.html', base).toString()
+  } catch {
+    return undefined
+  }
+}
+
 export function Footer() {
+  const docsUrl = import.meta.env.VITE_API_DOCS_URL?.trim() || swaggerUrlFromBase(import.meta.env.VITE_API_BASE_URL)
+
   return (
     <footer className="mt-10 border-t-2 border-paper-300 bg-paper-100/60 sm:mt-16">
       <div className="h-[3px] bg-poke-500" aria-hidden="true" />
@@ -20,14 +31,11 @@ export function Footer() {
           <Link to="/ranking" className="transition-colors hover:text-ink-700">
             Ranking
           </Link>
-          <a
-            href="http://localhost:8080/swagger-ui.html"
-            target="_blank"
-            rel="noreferrer"
-            className="transition-colors hover:text-ink-700"
-          >
-            API (Swagger)
-          </a>
+          {docsUrl && (
+            <a href={docsUrl} target="_blank" rel="noreferrer" className="transition-colors hover:text-ink-700">
+              API (Swagger)
+            </a>
+          )}
         </nav>
       </div>
     </footer>

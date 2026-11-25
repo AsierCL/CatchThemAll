@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { toAppError } from '../../api/errors'
 import { usersApi } from '../../api/endpoints'
-import type { JsonPatchOperation, UserResponse } from '../../api/types'
+import type { JsonPatchOperation, UserResponseFull } from '../../api/types'
 import { Button } from '../../components/ui/Button'
 import { Input, Textarea } from '../../components/ui/Field'
 import { ConfirmDialog, Modal } from '../../components/ui/Modal'
@@ -22,10 +22,10 @@ type EditProfileField = (typeof FIELD_ORDER)[number]
 type RemoveTarget = 'photo' | 'description'
 
 interface EditProfileModalProps {
-  user: UserResponse
+  user: UserResponseFull
   open: boolean
   onClose: () => void
-  onSaved: (user: UserResponse) => void
+  onSaved: (user: UserResponseFull) => void
 }
 
 /**
@@ -116,7 +116,7 @@ export function EditProfileModal({ user, open, onClose, onSaved }: EditProfileMo
     try {
       const updated = await usersApi.updateMe({
         name: form.name.trim(),
-        description: form.description,
+        description: form.description.trim(),
         photoUrl: form.photoUrl.trim(),
       })
       onSaved(updated)

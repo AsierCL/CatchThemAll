@@ -10,7 +10,8 @@ import type {
   UserLoginRequest,
   UserPutUpdateRequest,
   UserRegisterRequest,
-  UserResponse,
+  UserResponseBasic,
+  UserResponseFull,
 } from './types'
 
 const FAMOUS_CATEGORIES: FamousCategory[] = ['legendary', 'epic', 'rare', 'common']
@@ -36,18 +37,18 @@ export const authApi = {
 }
 
 export const usersApi = {
-  async me(): Promise<UserResponse> {
-    const { data } = await http.get<UserResponse>('/users/me')
+  async me(): Promise<UserResponseFull> {
+    const { data } = await http.get<UserResponseFull>('/users/me')
     return data
   },
 
-  async updateMe(body: UserPutUpdateRequest): Promise<UserResponse> {
-    const { data } = await http.put<UserResponse>('/users/me', body)
+  async updateMe(body: UserPutUpdateRequest): Promise<UserResponseFull> {
+    const { data } = await http.put<UserResponseFull>('/users/me', body)
     return data
   },
 
-  async patchMe(operations: JsonPatchOperation[]): Promise<UserResponse> {
-    const { data } = await http.patch<UserResponse>('/users/me', operations, {
+  async patchMe(operations: JsonPatchOperation[]): Promise<UserResponseFull> {
+    const { data } = await http.patch<UserResponseFull>('/users/me', operations, {
       headers: { 'Content-Type': 'application/json-patch+json' },
     })
     return data
@@ -57,35 +58,31 @@ export const usersApi = {
     await http.delete(`/users/${userId}`)
   },
 
-  async list(name?: string): Promise<UserResponse[]> {
-    const { data } = await http.get<UserResponse[]>('/users', {
+  async list(name?: string, signal?: AbortSignal): Promise<UserResponseBasic[]> {
+    const { data } = await http.get<UserResponseBasic[]>('/users', {
       params: name?.trim() ? { name: name.trim() } : undefined,
+      signal,
     })
     return data
   },
 
-  async get(userId: string): Promise<UserResponse> {
-    const { data } = await http.get<UserResponse>(`/users/${userId}`)
+  async get(userId: string, signal?: AbortSignal): Promise<UserResponseBasic> {
+    const { data } = await http.get<UserResponseBasic>(`/users/${userId}`, { signal })
     return data
   },
 
-  async getFull(userId: string): Promise<UserResponse> {
-    const { data } = await http.get<UserResponse>(`/users/${userId}/full`)
+  async ranking(signal?: AbortSignal): Promise<UserResponseBasic[]> {
+    const { data } = await http.get<UserResponseBasic[]>('/users/ranking', { signal })
     return data
   },
 
-  async ranking(): Promise<UserResponse[]> {
-    const { data } = await http.get<UserResponse[]>('/users/ranking')
+  async friends(userId: string, signal?: AbortSignal): Promise<UserResponseBasic[]> {
+    const { data } = await http.get<UserResponseBasic[]>(`/users/${userId}/friends`, { signal })
     return data
   },
 
-  async friends(userId: string): Promise<UserResponse[]> {
-    const { data } = await http.get<UserResponse[]>(`/users/${userId}/friends`)
-    return data
-  },
-
-  async addFriend(userId: string, friendId: string): Promise<UserResponse> {
-    const { data } = await http.post<UserResponse>(`/users/${userId}/friends`, { friendId })
+  async addFriend(userId: string, friendId: string): Promise<UserResponseBasic> {
+    const { data } = await http.post<UserResponseBasic>(`/users/${userId}/friends`, { friendId })
     return data
   },
 
@@ -93,32 +90,35 @@ export const usersApi = {
     await http.delete(`/users/${userId}/friends/${friendId}`)
   },
 
-  async friendProfile(userId: string, friendId: string): Promise<UserResponse> {
-    const { data } = await http.get<UserResponse>(`/users/${userId}/friends/${friendId}`)
+  async friendProfile(userId: string, friendId: string, signal?: AbortSignal): Promise<UserResponseFull> {
+    const { data } = await http.get<UserResponseFull>(`/users/${userId}/friends/${friendId}`, { signal })
     return data
   },
 }
 
 export const famousApi = {
-  async list(filters: FamousFilters = {}): Promise<FamousResponse[]> {
+  async list(filters: FamousFilters = {}, signal?: AbortSignal): Promise<FamousResponse[]> {
     const params: Record<string, string> = {}
     if (filters.type) params.type = filters.type
     if (filters.category) params.category = filters.category
 
     const { data } = await http.get<FamousResponse[]>('/famous', {
       params: Object.keys(params).length > 0 ? params : undefined,
+      signal,
     })
 
     // El backend cachea `GET /famous` sin filtros bajo la clave "null-null". Si
     // esa entrada se genero antes de cargar el catalogo, queda una lista vacia
-    // hasta que expire (24 h) y "Todas"/"Todos" no muestra ningun famoso.
+    // hasta que expire (5 min) y "Todas"/"Todos" no muestra ningun famoso.
     // Pedir por categoria esquiva esa clave; luego se unen y ordenan los cuatro
     // resultados. Con filtros activos la respuesta original ya es correcta.
     if (data.length > 0 || params.type || params.category) return data
 
+    signal?.throwIfAborted()
+
     const byCategory = await Promise.all(
       FAMOUS_CATEGORIES.map((category) =>
-        http.get<FamousResponse[]>('/famous', { params: { category } }),
+        http.get<FamousResponse[]>('/famous', { params: { category }, signal }),
       ),
     )
 
@@ -130,8 +130,8 @@ export const famousApi = {
     return [...byId.values()].toSorted((a, b) => a.pokedexNumber - b.pokedexNumber)
   },
 
-  async get(famousId: string): Promise<FamousResponse> {
-    const { data } = await http.get<FamousResponse>(`/famous/${famousId}`)
+  async get(famousId: string, signal?: AbortSignal): Promise<FamousResponse> {
+    const { data } = await http.get<FamousResponse>(`/famous/${famousId}`, { signal })
     return data
   },
 }
@@ -159,13 +159,8 @@ export const capturesApi = {
     return data
   },
 
-  async mine(): Promise<PageResponse<CaptureResponse>> {
-    const { data } = await http.get<PageResponse<CaptureResponse>>('/captures/me')
-    return data
-  },
-
-  async mineById(captureId: string): Promise<CaptureResponse> {
-    const { data } = await http.get<CaptureResponse>(`/captures/me/${captureId}`)
+  async mine(signal?: AbortSignal): Promise<CaptureResponse[]> {
+    const { data } = await http.get<CaptureResponse[]>('/captures/me', { signal })
     return data
   },
 }
