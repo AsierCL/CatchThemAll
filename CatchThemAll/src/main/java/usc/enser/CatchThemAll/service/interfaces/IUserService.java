@@ -3,19 +3,21 @@ package usc.enser.CatchThemAll.service.interfaces;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import tools.jackson.databind.JsonNode;
 import usc.enser.CatchThemAll.presentation.dto.UserResponse;
 import usc.enser.CatchThemAll.presentation.dto.UserPutUpdateRequest;
 
 public interface IUserService {
 
-    List<UserResponse> findAll();
+    Page<UserResponse> findAll(Pageable pageable);
 
-    List<UserResponse> search(String name);
+    Page<UserResponse> search(String name, Pageable pageable);
 
     UserResponse findById(UUID userId);
 
-    List<UserResponse> ranking();
+    Page<UserResponse> ranking(Pageable pageable);
 
     UserResponse putUpdate(UUID userId, UserPutUpdateRequest request);
 

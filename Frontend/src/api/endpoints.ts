@@ -1,6 +1,7 @@
 import { http } from './client'
 import type {
   CaptureResponse,
+  PageResponse,
   FamousCategory,
   FamousFilters,
   FamousResponse,

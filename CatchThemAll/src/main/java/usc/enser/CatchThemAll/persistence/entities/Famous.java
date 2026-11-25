@@ -2,13 +2,7 @@ package usc.enser.CatchThemAll.persistence.entities;
 
 import java.util.UUID;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,8 +22,10 @@ public class Famous {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID famousId;
 
+    @Column(unique = true, nullable = false)
     private Integer pokedexNumber;
 
+    @Column(unique = true, nullable = false)
     private String name;
 
     @Enumerated(EnumType.STRING)

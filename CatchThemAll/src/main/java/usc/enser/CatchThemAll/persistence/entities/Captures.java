@@ -40,10 +40,4 @@ public class Captures {
 
     private Double similarity;
 
-    //TODO
-    //Acordar como manejar ubicaciones
-    //private Location location;
-
-    private String photo_url;
-
 }

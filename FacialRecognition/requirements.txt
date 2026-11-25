@@ -9,3 +9,5 @@ opencv-python==5.0.0.93
 numpy==2.4.6
 psycopg2-binary==2.9.13
 pgvector==0.5.1
+pillow==12.3.0
+python-dotenv==1.2.4

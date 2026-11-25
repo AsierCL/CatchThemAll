@@ -1,11 +1,15 @@
 package usc.enser.CatchThemAll.presentation.controller;
 
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.validation.Valid;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -28,6 +32,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import usc.enser.CatchThemAll.annotations.RateLimited;
 import usc.enser.CatchThemAll.persistence.repositories.UserRepository;
 import usc.enser.CatchThemAll.presentation.dto.ErrorDTO;
 import tools.jackson.databind.JsonNode;
@@ -66,10 +71,11 @@ public class UserController {
     })
     @GetMapping
     @JsonView(UserResponse.Basic.class)
-    public List<UserResponse> findAll(
+    public Page<UserResponse> findAll(
             @Parameter(description = "Texto a buscar dentro del nombre", example = "ada")
-            @RequestParam(required = false) String name) {
-        return userService.search(name);
+            @RequestParam(required = false) String name,
+            @PageableDefault(sort = "name")Pageable pageable) {
+        return userService.search(name,pageable);
     }
 
     @Operation(
@@ -89,8 +95,8 @@ public class UserController {
     })
     @GetMapping("/ranking")
     @JsonView(UserResponse.Basic.class)
-    public List<UserResponse> ranking() {
-        return userService.ranking();
+    public Page<UserResponse> ranking(Pageable pageable) {
+        return userService.ranking(pageable);
     }
 
     @Operation(
@@ -173,6 +179,7 @@ public class UserController {
     })
     @PutMapping("/me")
     @JsonView(UserResponse.Full.class)
+    @RateLimited(capacity = 10, unit = ChronoUnit.MINUTES)
     public UserResponse putUpdate(@RequestBody @Valid UserPutUpdateRequest request){
         return userService.putUpdate(currentUserService.getCurrentUserId(), request);
     }
@@ -213,6 +220,7 @@ public class UserController {
             consumes = "application/json-patch+json"
     )
     @JsonView(UserResponse.Full.class)
+    @RateLimited(capacity = 10, unit = ChronoUnit.MINUTES)
     public UserResponse patchUpdate(@RequestBody JsonNode request){
         return userService.patchUpdate(currentUserService.getCurrentUserId(), request);
     }

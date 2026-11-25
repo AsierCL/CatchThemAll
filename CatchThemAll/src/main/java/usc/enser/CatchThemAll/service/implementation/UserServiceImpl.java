@@ -4,7 +4,10 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,29 +28,27 @@ import usc.enser.CatchThemAll.service.interfaces.IUserService;
 public class UserServiceImpl implements IUserService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
 
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, ObjectMapper objectMapper) {
+    public UserServiceImpl(UserRepository userRepository, ObjectMapper objectMapper) {
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
         this.objectMapper = objectMapper;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<UserResponse> findAll() {
-        return userRepository.findAll().stream().map(this::toResponse).toList();
+    public Page<UserResponse> findAll(Pageable pageable) {
+        return userRepository.findAll(pageable).map(this::toResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<UserResponse> search(String name) {
+    public Page<UserResponse> search(String name,Pageable pageable) {
         if (name == null || name.isBlank()) {
-            return findAll();
+            return findAll(pageable);
         }
-        return userRepository.findAllByNameContainingIgnoreCaseOrderByNameAsc(name.trim())
-                .stream().map(this::toResponse).toList();
+        return userRepository.findAllByNameContainingIgnoreCaseOrderByNameAsc(name.trim(),pageable)
+                .map(this::toResponse);
     }
 
     @Override
@@ -59,13 +60,14 @@ public class UserServiceImpl implements IUserService {
     @Override
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "ranking", unless = "#result == null")
-    public List<UserResponse> ranking() {
-        return userRepository.findRanking()
-                .stream().map(this::toResponse).toList();
+    public Page<UserResponse> ranking(Pageable pageable) {
+        return userRepository.findRanking(pageable)
+                .map(this::toResponse);
     }
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "ranking")
     public UserResponse putUpdate(UUID userId, UserPutUpdateRequest request) {
         if (request == null) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "update data is required");
@@ -86,6 +88,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "ranking")
     public UserResponse patchUpdate(UUID userId, JsonNode request) {
         if (request == null || !request.isArray() || request.isEmpty()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "update data is required");
@@ -126,6 +129,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "ranking")
     public void delete(UUID userId) {
         User user = getOrThrow(userId);
         for (User friend : user.getFriends()) {
@@ -195,8 +199,8 @@ public class UserServiceImpl implements IUserService {
                 user.getName(),
                 user.getPhotoUrl(),
                 user.getScore() == null ? 0 : user.getScore(),
-                user.getCaptures().size(),
-                user.getFriends().stream().map(User::getUserId).collect(Collectors.toSet()),
+                (int) userRepository.countCapturesByUserId(user.getUserId()),
+                userRepository.findFriendIds(user.getUserId()),
                 user.getDescription());
     }
 }

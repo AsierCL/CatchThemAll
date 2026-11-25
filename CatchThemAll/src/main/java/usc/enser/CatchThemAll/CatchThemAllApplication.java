@@ -7,7 +7,6 @@ import org.springframework.grpc.client.ImportGrpcClients;
 
 @SpringBootApplication
 @ImportGrpcClients(
-    target = "localhost:9090",
     types = CaptureServiceGrpc.CaptureServiceFutureStub.class
 )
 public class CatchThemAllApplication {

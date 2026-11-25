@@ -57,6 +57,9 @@ public class User {
 
     private Set<User> friends = new HashSet<>();
 
-    @OneToMany(mappedBy = "user")
+    @OneToMany(
+            mappedBy = "user",
+            cascade = CascadeType.REMOVE
+    )
     private List<RefreshToken> refreshToken = new ArrayList<>();
 }
